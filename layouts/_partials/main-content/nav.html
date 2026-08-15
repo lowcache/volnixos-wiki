@@ -1,0 +1,24 @@
+{{- /*
+  Project override of E25DX's main-content/nav.html.
+
+  Two reasons this exists rather than inheriting:
+
+  1. The stock partial reads site.Data, deprecated in Hugo v0.156, and was
+     the last template in this build still emitting that warning.
+  2. Its labels ("On this section" / "On this page") do not match the
+     drawing set's vocabulary, and the theme's blog branch is dead code
+     here — this wiki has no blog section.
+
+  The markup contract is load-bearing and unchanged: off-canvas.js binds to
+  `#article-nav > button:first-child` (opens the left panel) and
+  `#article-nav > button:last-child` (opens the contents rail). Reordering
+  or nesting these buttons silently breaks both panels on small screens.
+*/ -}}
+<nav id="article-nav" aria-label="Sheet navigation">
+  <button class="btn" type="button">
+    {{ partial "icon.html" "side_navigation" }} Drawing set
+  </button>
+  <button class="btn" type="button">
+    On this sheet {{ partial "icon.html" "list_alt" }}
+  </button>
+</nav>

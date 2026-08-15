@@ -8,7 +8,11 @@ title = "Volatile NixOS Configuration"
 enableRobotsTXT = true
 enableInlineShortcodes = true
 enableEmoji = true
-enableGitInfo = false
+# Sheet revision dates come from git commit history. Without this every page
+# reports .Lastmod as 0001-01-01, which the title block printed verbatim.
+# Templates still guard on IsZero so a shallow CI clone degrades to "—"
+# rather than to a wrong date.
+enableGitInfo = true
 
 # The wiki has no taxonomies. E25DX disables these in its own reference config;
 # without it Hugo emits empty /tags/ and /categories/ pages.
@@ -17,6 +21,12 @@ disableKinds = ["taxonomy", "term"]
 [minify]
   disableXML = true
   minifyOutput = true
+  # The design direction contract is an HTML comment at the top of <body>
+  # (see layouts/home.html and layouts/single.html). Hugo's HTML minifier
+  # strips comments by default, which would erase a record that is meant to
+  # be auditable in the SERVED output, not just in the templates.
+  [minify.tdewolff.html]
+    keepComments = true
 
 # The theme is a Hugo Module, resolved through go.mod — NOT a git submodule.
 # `go` must be on PATH for module resolution (see flake.nix, Makefile).
@@ -65,6 +75,18 @@ disableKinds = ["taxonomy", "term"]
     startLevel = 2
     endLevel = 3
 
+# ---------------------------------------------------------------------------
+# Analytics. E25DX renders layouts/_partials/analytics.html only when this ID
+# is set, so leaving it commented ships NO tracking script at all.
+#
+# Ads are a separate, still-open decision. The layout already reserves the
+# title block as a support rail carrying real author content, so inventory can
+# be introduced there later without reflow and without sitting adjacent to the
+# tool recommendations in the prose. No ad code is present anywhere.
+# ---------------------------------------------------------------------------
+# [services.googleAnalytics]
+#   ID = "G-XXXXXXXXXX"
+
 [params]
   enableOGXSEO = false
   # Search is a POST-BUILD step: the theme renders the UI, but the index is only
@@ -95,46 +117,46 @@ disableKinds = ["taxonomy", "term"]
     url = "/architecture/"
     weight = 10
     [menus.main.params]
-      icon = "science"
+      icon = "vol-strata"
   [[menus.main]]
     identifier = "networking"
     name = "Networking"
     url = "/networking/"
     weight = 20
     [menus.main.params]
-      icon = "side_navigation"
+      icon = "vol-net"
   [[menus.main]]
     identifier = "system"
     name = "System"
     url = "/system/"
     weight = 30
     [menus.main.params]
-      icon = "rocket_launch"
+      icon = "vol-chip"
   [[menus.main]]
     identifier = "phone"
     name = "Phone"
     url = "/phone/"
     weight = 40
     [menus.main.params]
-      icon = "news"
+      icon = "vol-handset"
   [[menus.main]]
     identifier = "desktop"
     name = "Desktop"
     url = "/desktop/"
     weight = 50
     [menus.main.params]
-      icon = "palette"
+      icon = "vol-window"
   [[menus.main]]
     identifier = "reference"
     name = "Reference"
     url = "/reference/"
     weight = 60
     [menus.main.params]
-      icon = "menu_book"
+      icon = "vol-sheet"
   [[menus.main]]
     identifier = "tooling"
     name = "Tooling"
     url = "/tooling/"
     weight = 70
     [menus.main.params]
-      icon = "list_alt"
+      icon = "vol-caliper"

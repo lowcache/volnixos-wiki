@@ -1,0 +1,29 @@
+{{- /*
+  Project override of E25DX's site/footer.html.
+
+  The stock partial writes site.Params.project.repo.main ("lowcache/volnixos-wiki")
+  straight into an href, which the browser resolves as a RELATIVE path — the
+  GitHub link in the footer of every page pointed at a URL on this site that
+  does not exist. It is built properly here.
+
+  Rendered as a drawing's bottom edge: the sheet's own provenance strip.
+*/ -}}
+
+<footer id="site-footer" class="dw-footrule">
+  <span class="dw-footrule__item">
+    Drawn by
+    <a href="{{ site.Params.author.url }}" rel="author noopener" target="_blank">{{ site.Params.author.name }}</a>
+  </span>
+  <span class="dw-footrule__item dw-fig">
+    {{ with site.Params.project.startYear }}{{ . }}–{{ end }}{{ site.Params.project.presentYear }}
+  </span>
+  <span class="dw-footrule__item">
+    <a href="https://github.com/{{ site.Params.project.repo.main }}" rel="external noopener" target="_blank">Wiki source</a>
+  </span>
+  <span class="dw-footrule__item">
+    <a href="https://github.com/lowcache/volnixos" rel="external noopener" target="_blank">Configuration source</a>
+  </span>
+  <span class="dw-footrule__item">
+    <a href="https://infernalcode.com" rel="noopener">Volatile Testimony</a>
+  </span>
+</footer>

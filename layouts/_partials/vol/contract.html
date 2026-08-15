@@ -1,0 +1,38 @@
+{{- /*
+  Emits the design direction contract into the SERVED markup.
+
+  It has to go through safeHTML as a raw string rather than being written
+  as a literal <!-- --> in the layout: Go's html/template elides HTML
+  comments while parsing, so a literal comment never reaches the output
+  at all — with or without minification. (hugo.toml additionally sets
+  minify.tdewolff.html.keepComments so the minifier does not strip it on
+  the way out.)
+
+  Called with "cover" or "sheet".
+*/ -}}
+
+{{- $surface := . -}}
+
+{{- $common := `
+  OWN-WORLD: Service-manual drawing set. Ink stock reversed white-on-dark
+  (light = drafting vellum), hairline keylines, dashed leaders, numbered
+  callout balloons, ruled title block, Barlow Condensed drafting lettering.
+  Hatched = volatile, solid = persists. MAGENTA marks THE ONE LOCATED ITEM —
+  the part under discussion, the current sheet, the search hit, the caret, the
+  CAUTION rung — and is never decoration, never prose emphasis, and absent
+  from the syntax palette. Cyan is construction only. Nothing rounded but
+  callout balloons.
+  RAISED: dimensioned void (Cloud Quarry) · one saturated element, strict
+  module (Brick Instructions) · rank by drawn weight not font weight (Star
+  Atlas) · real Z axis (Console Atmosphere) · colour as one role (Exposure
+  Record) · state as a drawn mark (Cutting Bench).
+  FORM: Exploded Assembly — candidate 3 of the grounded list; seed 11a595cf.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the
+  finish review, the verdict, and DESIGN.md
+` -}}
+
+{{- if eq $surface "cover" -}}
+{{- printf "<!--\n  THESIS: A NixOS configuration is an exploded assembly drawing — every part\n  named, numbered, separately removable — so the wiki is drawn as one. It\n  refuses the terminal-green hero and the Docusaurus gradient card grid alike.\n  STORY: The visitor sees the whole machine apart, understands that everything\n  above the datum is destroyed every boot, and takes exactly one part.\n  FIRST VIEWPORT: Full-bleed general-assembly drawing, ten plates on a vertical\n  axis, leaders right to numbered balloons, keyed parts list beside; the Rebuild\n  control wipes the volatile half and re-derives it.\n%s-->" $common | safeHTML -}}
+{{- else -}}
+{{- printf "<!--\n  THESIS: A NixOS configuration is an exploded assembly drawing. Interior pages\n  are the individual sheets of that set, not blog posts with a sidebar.\n  STORY: The reader finds one mechanism, reads it against their own config, and\n  leaves with a pattern — never with an instruction to install this wholesale.\n  FIRST VIEWPORT: Sheet header carrying sheet number and title over a ruled\n  datum, drawing-set index left, contents rail right, body at a 68ch measure,\n  advisories on the NOTE < CAUTION < WARNING ladder ranked by drawn weight.\n%s-->" $common | safeHTML -}}
+{{- end -}}

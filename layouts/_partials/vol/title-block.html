@@ -1,0 +1,73 @@
+{{- /*
+  TITLE BLOCK — the ruled panel a drawing carries in its lower-right
+  corner: who drew it, which sheet it is, what revision, and where the
+  original is held.
+
+  This is also the site's SUPPORT RAIL. On a drawing, the title block is
+  where attribution lives by convention, so the repository link, the
+  author, and the support ask sit here natively rather than being bolted
+  on. It always carries real content, which is why it can absorb a
+  sponsor or ad slot later without leaving a hole in the layout or
+  sitting next to a tool recommendation in the prose.
+
+  Called with a dict: sheet, title, rev, scale.
+*/ -}}
+
+{{- $sheet := .sheet | default "VN-000" -}}
+{{- $title := .title | default site.Title -}}
+{{- $rev := .rev -}}
+{{- $scale := .scale | default "NTS" -}}
+
+<aside class="dw-titleblock" aria-label="Drawing title block">
+  <div class="dw-tb__row dw-tb__row--main">
+    <div class="dw-tb__cell dw-tb__cell--title">
+      <span class="dw-tb__key">Title</span>
+      <span class="dw-tb__val">{{ $title }}</span>
+    </div>
+    <div class="dw-tb__cell">
+      <span class="dw-tb__key">Sheet</span>
+      <span class="dw-tb__val dw-tb__val--fig">{{ $sheet }}</span>
+    </div>
+  </div>
+
+  <div class="dw-tb__row">
+    <div class="dw-tb__cell">
+      <span class="dw-tb__key">Drawn</span>
+      <span class="dw-tb__val">
+        <a href="{{ site.Params.author.url }}" rel="author">{{ site.Params.author.name }}</a>
+      </span>
+    </div>
+    <div class="dw-tb__cell">
+      <span class="dw-tb__key">Rev</span>
+      <span class="dw-tb__val dw-tb__val--fig">{{ $rev }}</span>
+    </div>
+    <div class="dw-tb__cell">
+      <span class="dw-tb__key">Scale</span>
+      <span class="dw-tb__val dw-tb__val--fig">{{ $scale }}</span>
+    </div>
+  </div>
+
+  <div class="dw-tb__row dw-tb__row--links">
+    <a class="dw-tb__link" href="https://github.com/lowcache/volnixos">
+      <svg class="dw-ico" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M8 .5a7.5 7.5 0 0 0-2.37 14.62c.37.07.51-.16.51-.36l-.01-1.26c-2.09.45-2.53-1-2.53-1-.34-.87-.83-1.1-.83-1.1-.68-.47.05-.46.05-.46.76.06 1.16.78 1.16.78.67 1.15 1.76.82 2.19.63.07-.49.26-.82.48-1.01-1.67-.19-3.42-.83-3.42-3.71 0-.82.29-1.49.78-2.02-.08-.19-.34-.96.07-2 0 0 .63-.2 2.07.77a7.2 7.2 0 0 1 3.77 0c1.44-.97 2.07-.77 2.07-.77.41 1.04.15 1.81.07 2 .49.53.78 1.2.78 2.02 0 2.89-1.76 3.52-3.43 3.7.27.23.51.69.51 1.4l-.01 2.07c0 .2.14.44.52.36A7.5 7.5 0 0 0 8 .5Z" />
+      </svg>
+      Source repository
+    </a>
+    <a class="dw-tb__link" href="https://buymeacoffee.com/lowcache">
+      <svg class="dw-ico" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M2.5 5.5h9v5a3 3 0 0 1-3 3h-3a3 3 0 0 1-3-3v-5Z" />
+        <path d="M11.5 6.5h1a1.75 1.75 0 0 1 0 3.5h-1" />
+        <path d="M4.5 2v1.5M7 2v1.5M9.5 2v1.5" />
+      </svg>
+      Buy me a coffee
+    </a>
+    <a class="dw-tb__link" href="https://infernalcode.com">
+      <svg class="dw-ico" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M2.5 3.5h11v9h-11z" />
+        <path d="M2.5 6.5h11M5.5 6.5v6" />
+      </svg>
+      Volatile Testimony
+    </a>
+  </div>
+</aside>

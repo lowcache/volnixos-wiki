@@ -9,3 +9,8 @@
 # Direnv / editor scratch
 /.direnv/
 *.swp
+
+# Impeccable design-workflow scratch (decision-page logs, generated mocks).
+# PRODUCT.md and DESIGN.md are deliberately NOT ignored — they are the
+# durable product and visual records.
+/.impeccable/

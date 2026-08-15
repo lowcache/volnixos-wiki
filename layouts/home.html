@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="{{ site.Language.Locale | default `en-US` }}">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{{ site.Params.description | .RenderString }}">
+  <meta name="author" content="{{ site.Params.author.name }}">
+  <meta name="theme-color" content="{{ site.Params.project.themeColor.light }}" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="{{ site.Params.project.themeColor.dark }}" media="(prefers-color-scheme: dark)">
+  {{ with .Params.robots }}<meta name="robots" content="{{ . }}">{{ end }}
+
+  <title>{{ site.Title | .RenderString }} · {{ site.Params.description | .RenderString }}</title>
+  <link rel="canonical" href="{{ .Permalink }}">
+
+  {{ partial "vol/head-color.html" . }}
+  {{ partial "vol/head-fonts.html" . }}
+
+  {{- /* Pagefind's stylesheet is loaded BEFORE the site bundle on purpose: it
+      defines its own :root defaults (--pf-background: #fff and friends), so
+      loading it after theme.css made the search box render white-on-white in
+      the dark scheme. Same specificity, later wins — so ours must come last. */ -}}
+  {{ with site.Params.enablePageFind }}
+  <link href="{{ "pagefind/pagefind-component-ui.css" | absURL }}" rel="stylesheet">
+  {{ end }}
+
+  {{ $css := slice
+      (resources.Get "css/reset.css")
+      (resources.Get "css/theme.css")
+      (resources.Get "css/components/dropdown.css")
+      (resources.Get "css/components/chroma.css")
+      (resources.Get "css/vol/base.css")
+      (resources.Get "css/vol/chrome.css")
+      (resources.Get "css/vol/content.css")
+      (resources.Get "css/vol/cover.css")
+    | resources.Concat "assets/css/home.css" | minify | fingerprint }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.integrity }}">
+
+
+  {{ partial "favicons.html" . }}
+  {{ partial "analytics.html" . }}
+  {{ partial "og-x-seo.html" . }}
+</head>
+
+<body>
+  {{ partial "vol/contract.html" "cover" }}
+  <div id="content-wrapper">
+    {{ partial "site/header.html" . }}
+
+    <main class="dw-cover" data-pagefind-body>
+      {{- $a := index hugo.Data site.Language.Lang "assembly" -}}
+
+      {{- /* No chip row above the title: an eyebrow is a label the heading
+          does not need, and the sheet number belongs in the ruled title
+          block at the foot of the sheet, which is where a drawing set
+          prints it. */ -}}
+      <div class="dw-masthead">
+        <h1 class="dw-masthead__title">{{ $a.title }}</h1>
+        <p class="dw-masthead__lede">{{ $a.subtitle }}</p>
+        <p class="dw-masthead__desc">{{ site.Params.description }}</p>
+      </div>
+
+      {{ partial "vol/assembly.html" . }}
+
+      <section class="dw-notes" aria-labelledby="dw-notes-h">
+        <h2 id="dw-notes-h" class="dw-rule-head">General notes</h2>
+        <div class="dw-notes__body" id="article-body">
+          {{ .Content | safeHTML }}
+        </div>
+      </section>
+
+      <section class="dw-index" aria-labelledby="dw-index-h">
+        <h2 id="dw-index-h" class="dw-rule-head">Sheet index</h2>
+        <table class="dw-index__table">
+          <caption class="dw-index__caption">Every sheet in the set, by number.</caption>
+          <thead>
+            <tr><th scope="col">Sheet</th><th scope="col">Title</th><th scope="col">Contents</th><th scope="col">Sheets</th></tr>
+          </thead>
+          <tbody>
+            {{- range site.Sections.ByWeight }}
+            {{- $count := len .RegularPages }}
+            <tr>
+              <th scope="row" class="dw-index__no">VN-{{ mul .Weight 10 }}</th>
+              <td class="dw-index__title"><a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a></td>
+              <td class="dw-index__contents">
+                {{- $names := slice }}
+                {{- range .RegularPages.ByWeight }}{{ $names = $names | append .LinkTitle }}{{ end }}
+                {{ delimit $names " · " }}
+              </td>
+              <td class="dw-index__count dw-fig">{{ $count }}</td>
+            </tr>
+            {{- end }}
+          </tbody>
+        </table>
+      </section>
+
+      <div data-pagefind-ignore>
+      {{ partial "vol/title-block.html" (dict
+          "sheet" $a.sheet
+          "title" $a.title
+          "rev" (dateFormat "2006-01-02" now)
+          "scale" "NTS") }}
+      </div>
+    </main>
+
+    {{ partial "site/footer.html" . }}
+  </div>
+
+  {{- $js := slice
+      (resources.Get "js/components/dropdown.js")
+      (resources.Get "js/site/color-preference.js")
+      (resources.Get "js/vol/assembly.js")
+    | resources.Concat "assets/js/home.js" | minify | fingerprint }}
+  <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.integrity }}" defer></script>
+
+  {{ with site.Params.enablePageFind }}
+  <script src="{{ "pagefind/pagefind-component-ui.js" | absURL }}" type="module"></script>
+  {{ end }}
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="{{ site.Language.Locale | default `en-US` }}">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{{ .Page.Params.description | default site.Params.description | .RenderString }}">
+  <meta name="author" content="{{ site.Params.author.name }}">
+  <meta name="theme-color" content="{{ site.Params.project.themeColor.light }}" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="{{ site.Params.project.themeColor.dark }}" media="(prefers-color-scheme: dark)">
+  {{ with .Params.robots }}<meta name="robots" content="{{ . }}">{{ end }}
+
+  <title>{{ .Title | .RenderString }} · {{ site.Title | .RenderString }}</title>
+  <link rel="canonical" href="{{ .Permalink }}">
+
+  {{ partial "vol/head-color.html" . }}
+  {{ partial "vol/head-fonts.html" . }}
+
+  {{ $hasSidebar := index hugo.Data site.Language.Lang .Section "sidebar" }}
+
+  {{- /* Pagefind's stylesheet is loaded BEFORE the site bundle on purpose: it
+      defines its own :root defaults (--pf-background: #fff and friends), so
+      loading it after theme.css made the search box render white-on-white in
+      the dark scheme. Same specificity, later wins — so ours must come last. */ -}}
+  {{ with site.Params.enablePageFind }}
+  <link href="{{ "pagefind/pagefind-component-ui.css" | absURL }}" rel="stylesheet">
+  {{ end }}
+
+  {{ $css := slice
+      (resources.Get "css/reset.css")
+      (resources.Get "css/theme.css")
+      (resources.Get "css/components/dropdown.css")
+      (resources.Get "css/components/chroma.css")
+      (resources.Get "css/components/tabs.css")
+      (resources.Get "css/components/accordion-vertical-tabs.css")
+      (resources.Get "css/components/checkbox.css")
+      (resources.Get "css/vol/base.css")
+      (resources.Get "css/vol/chrome.css")
+      (resources.Get "css/vol/content.css")
+      (resources.Get "css/vol/sheet.css")
+    }}
+  {{ $css = $css | resources.Concat (printf "assets/css/%s.css" .Type) | minify | fingerprint }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.integrity }}">
+
+
+  {{ partial "favicons.html" . }}
+  {{ partial "analytics.html" . }}
+  {{ partial "og-x-seo.html" . }}
+</head>
+
+<body class="{{ if $hasSidebar }}has-left-sidebar{{ else }}no-left-sidebar{{ end }}">
+  {{ partial "vol/contract.html" "sheet" }}
+  {{ with $hasSidebar }}
+    {{ partial "site/left-sidebar.html" . }}
+  {{ end }}
+
+  <div id="content-wrapper">
+    {{ partial "site/header.html" . }}
+
+    <main>
+      <article class="dw-sheet" data-pagefind-body>
+        <div data-pagefind-ignore>{{ partial "main-content/nav.html" . }}</div>
+
+        <header id="article-header" class="dw-sheethead">
+          <h1 style="view-transition-name: {{ .RelPermalink | anchorize }}">{{ .Title | .RenderString }}</h1>
+          {{ with .Params.summary }}<p class="dw-sheethead__lede">{{ . | $.RenderString }}</p>{{ end }}
+          {{- /* identification reads BELOW the title, as a drawing captions a
+              view. Above it, it is an eyebrow — and the heading carries its
+              own weight. */ -}}
+          <p class="dw-sheethead__id">
+            <span class="dw-tag dw-tag--fig">VN-{{ mul .CurrentSection.Weight 10 }}{{ if not .IsSection }}.{{ .Weight }}{{ end }}</span>
+            <a class="dw-tag dw-tag--link" href="{{ .CurrentSection.RelPermalink }}">{{ .CurrentSection.LinkTitle }}</a>
+          </p>
+        </header>
+
+        <div id="article-body">
+          {{ .Content | safeHTML }}
+        </div>
+
+        <div data-pagefind-ignore>
+        {{ partial "main-content/footer.html" . }}
+
+        {{ partial "vol/title-block.html" (dict
+            "sheet" (printf "VN-%d%s" (mul .CurrentSection.Weight 10) (cond .IsSection "" (printf ".%d" .Weight)))
+            "title" .Title
+            "rev" (cond .Lastmod.IsZero "—" (.Lastmod.Format "2006-01-02"))
+            "scale" "1:1") }}
+        </div>
+      </article>
+
+      {{ partial "site/right-sidebar.html" . }}
+    </main>
+
+    {{ partial "site/footer.html" . }}
+  </div>
+
+  <div id="off-canvas-model"></div>
+
+  {{- $js := slice
+      (resources.Get "js/components/dropdown.js")
+      (resources.Get "js/components/tab-group.js")
+      (resources.Get "js/site/color-preference.js")
+      (resources.Get "js/site/off-canvas.js")
+      (resources.Get "js/site/table-of-contents.js")
+    | resources.Concat (printf "assets/js/%s.js" .Type) | minify | fingerprint }}
+  <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.integrity }}" defer></script>
+
+  {{ with site.Params.enablePageFind }}
+  <script src="{{ "pagefind/pagefind-component-ui.js" | absURL }}" type="module"></script>
+  {{ end }}
+</body>
+</html>

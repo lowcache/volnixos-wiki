@@ -1,0 +1,277 @@
+/* =====================================================================
+   CONTENT — the body of a sheet.
+
+   Prose, advisories, detail views (code), and tables. Legibility outranks
+   expression here: this is where the reader is actually working, usually
+   with their own configuration open in another window.
+   ===================================================================== */
+
+/* the measure binds RUNNING TEXT, not the whole column: diagrams, detail
+   views and schedules are drawings and get the full width of the sheet */
+#article-body :is(p, ul, ol, dl, blockquote, h2, h3, h4, h5, h6),
+.dw-notes__body :is(p, ul, ol, dl, blockquote, h2, h3, h4, h5, h6) {
+  max-width: var(--dw-measure);
+}
+
+#article-body p,
+.dw-notes__body p {
+  text-wrap: pretty;
+}
+
+#article-body :is(ul, ol),
+.dw-notes__body :is(ul, ol) {
+  padding-left: var(--dw-s4);
+}
+#article-body li + li,
+.dw-notes__body li + li {
+  margin-top: var(--dw-s2);
+}
+#article-body li::marker,
+.dw-notes__body li::marker {
+  color: var(--dw-line-3);
+}
+
+/* headings carry a drawn item mark rather than a colour change */
+#article-body :is(h2, h3) {
+  position: relative;
+  scroll-margin-top: calc(var(--site-header-height) + var(--dw-s5));
+}
+#article-body h2 {
+  padding-top: var(--dw-s3);
+  border-top: var(--dw-lw-thin) solid var(--dw-hair);
+}
+
+#article-body strong,
+.dw-notes__body strong {
+  font-weight: 600;
+}
+
+/* ---- inline code ---------------------------------------------------- */
+
+:is(#article-body, .dw-notes__body, .dw-parts, td, li) code {
+  font-family: var(--font-mono);
+  font-size: 0.855em;
+  padding: 0.1em 0.24em;
+  background: var(--dw-t2);
+  border: var(--dw-lw-hair) solid var(--dw-hair);
+  color: var(--dw-line);
+  white-space: nowrap;
+}
+a code { color: inherit; }
+
+/* ---- detail view: a fenced block, drawn as an inset panel ----------- */
+
+.highlight,
+#article-body pre:not(.mermaid),
+.dw-notes__body pre:not(.mermaid) {
+  position: relative;
+  background: var(--dw-paper-2);
+  border: var(--dw-lw-thin) solid var(--dw-hair);
+  box-shadow: inset 0 0 0 1px var(--dw-t1);
+}
+
+#article-body pre:not(.mermaid),
+.dw-notes__body pre:not(.mermaid),
+.highlight pre {
+  overflow-x: auto;
+  padding: var(--dw-s4);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  line-height: 1.62;
+  tab-size: 2;
+}
+.highlight pre {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.highlight code { white-space: pre; }
+
+/* the corner tab a detail view carries on a drawing */
+.code-window {
+  border: var(--dw-lw-thin) solid var(--dw-hair);
+  background: var(--dw-paper-2);
+}
+.code-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-s3);
+  padding: var(--dw-s2) var(--dw-s3);
+  border-bottom: var(--dw-lw-thin) dashed var(--dw-hair);
+  background: var(--dw-t1);
+}
+/* traffic lights are a macOS window costume; a drawing uses a detail
+   marker instead */
+.traffic-lights { display: none; }
+.code-header::before {
+  content: "Detail";
+  font-family: var(--font-cond);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--dw-line-3);
+  padding-right: var(--dw-s3);
+  border-right: var(--dw-lw-thin) solid var(--dw-hair);
+}
+.code-title {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--dw-line-2);
+}
+.code-header > div:last-child { margin-left: auto; }
+.code-label {
+  font-family: var(--font-cond);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--dw-cons);
+  text-decoration: none;
+}
+.code-body { overflow: hidden; }
+
+/* ---- advisories: the manual's NOTE < CAUTION < WARNING ladder -------
+   Severity is carried by drawn weight — rule thickness and a hatched
+   header edge — not by a coloured slab, so the ranking survives
+   monochrome printing and colour-blind reading. */
+
+.alert {
+  margin-block: var(--dw-s5);
+  border: var(--dw-lw-thin) solid var(--dw-hair);
+  background: var(--alert-note);
+}
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-s2);
+  padding: var(--dw-s2) var(--dw-s3);
+  font-family: var(--font-cond);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  border-bottom: var(--dw-lw-thin) solid var(--dw-hair);
+  color: var(--dw-line-2);
+}
+.alert-header svg {
+  display: block;
+  flex: none;
+  width: 17px;
+  height: 17px;
+}
+.alert-body {
+  padding: var(--dw-s3);
+}
+.alert-body > * + * { margin-top: var(--dw-s3); }
+.alert-body > :first-child { margin-top: 0; }
+
+.alert-note    { background: var(--alert-note); }
+.alert-tip     { background: var(--alert-tip); }
+.alert-important { background: var(--alert-important); }
+.alert-warning { background: var(--alert-warning); }
+.alert-caution { background: var(--alert-caution); }
+
+.alert-note .alert-header,
+.alert-tip .alert-header    { color: var(--dw-cons); }
+.alert-important .alert-header { color: var(--dw-line-2); }
+
+/* rising severity: the rule gets heavier and the header edge is hatched */
+.alert-warning {
+  border-width: var(--dw-lw-med);
+  border-color: var(--alert-rule-warning);
+}
+.alert-warning .alert-header {
+  color: var(--alert-rule-warning);
+  border-bottom-color: var(--alert-rule-warning);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    color-mix(in srgb, var(--alert-rule-warning) 22%, transparent) 5px 10px
+  );
+}
+.alert-caution {
+  border-width: var(--dw-lw-heavy);
+  border-color: var(--alert-rule-caution);
+}
+.alert-caution .alert-header {
+  color: var(--alert-rule-caution);
+  border-bottom-color: var(--alert-rule-caution);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    var(--dw-mark-dim) 5px 10px
+  );
+}
+
+/* ---- blockquote ----------------------------------------------------- */
+
+#article-body blockquote,
+.dw-notes__body blockquote {
+  padding-left: var(--dw-s4);
+  border-left: var(--dw-lw-thin) solid var(--dw-line-3);
+  color: var(--dw-line-2);
+  font-style: normal;
+}
+
+/* ---- tables: a drawing's schedule ----------------------------------- */
+
+#article-body table,
+.dw-notes__body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+#article-body :is(th, td),
+.dw-notes__body :is(th, td) {
+  padding: var(--dw-s2) var(--dw-s3);
+  text-align: left;
+  border: var(--dw-lw-hair) solid var(--dw-hair);
+  vertical-align: top;
+}
+#article-body th,
+.dw-notes__body th {
+  font-family: var(--font-cond);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--dw-line-3);
+  background: var(--dw-t1);
+  white-space: normal;
+}
+#article-body tbody tr:hover,
+.dw-notes__body tbody tr:hover { background: var(--dw-t1); }
+
+@media (min-width: 744px) {
+  #article-body table,
+  .dw-notes__body table { white-space: normal; }
+}
+
+/* ---- diagrams -------------------------------------------------------- */
+
+pre.mermaid {
+  padding: var(--dw-s5);
+  background: var(--dw-paper-2);
+  border: var(--dw-lw-thin) solid var(--dw-hair);
+  text-align: center;
+  overflow-x: auto;
+}
+pre.mermaid:not([data-processed]) {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--dw-line-3);
+  text-align: left;
+}
+
+/* ---- images ---------------------------------------------------------- */
+
+#article-body img,
+.dw-notes__body img {
+  border: var(--dw-lw-thin) solid var(--dw-hair);
+  background: var(--dw-paper-2);
+}

@@ -1,0 +1,101 @@
+# =====================================================================
+# EXPLODED ASSEMBLY — the parts list for the drawing on the cover sheet.
+#
+# Order is bottom-of-stack first: item 01 is the foundation the machine
+# is built on, item 10 is what the user actually looks at. This is a
+# LOGICAL assembly order, not a claim about physical memory layout.
+#
+# `volatile: true` marks the parts that live above the tmpfs boundary and
+# are therefore destroyed and re-derived on every boot. The cover sheet's
+# wipe animation is driven off this flag, so it stays truthful to the
+# configuration rather than being hand-choreographed.
+#
+# Every `href` must resolve — check-links.sh fails the build otherwise.
+# =====================================================================
+
+axis: "ASSEMBLY AXIS · volnix"
+sheet: "VN-000"
+title: "Volatile NixOS"
+subtitle: "Stateless workstation — general assembly"
+
+parts:
+  - no: "01"
+    name: "UEFI + Lanzaboote"
+    layer: "secure boot"
+    href: "/architecture/boot/"
+    note: "Signed boot chain; unified kernel images enrolled against custom Secure Boot keys."
+    volatile: false
+
+  - no: "02"
+    name: "CachyOS kernel"
+    layer: "kernel"
+    href: "/architecture/kernel/"
+    note: "Low-latency scheduler build, tuned for interactive desktop work."
+    volatile: false
+
+  - no: "03"
+    name: "Hybrid graphics"
+    layer: "hardware"
+    href: "/system/gpu/"
+    note: "AMD iGPU and NVIDIA RTX 4050 on one chassis, switched per workload."
+    volatile: false
+
+  - no: "04"
+    name: "/persist"
+    layer: "durable state"
+    href: "/architecture/impermanence/"
+    note: "The only writes that survive. Everything durable is mapped here by name."
+    volatile: false
+
+  - no: "05"
+    name: "tmpfs root"
+    layer: "volatile root"
+    href: "/architecture/impermanence/"
+    note: "The root filesystem lives in RAM and is destroyed on every boot."
+    volatile: true
+    boundary: true
+
+  - no: "06"
+    name: "sops-nix + age"
+    layer: "secrets"
+    href: "/architecture/secrets/"
+    note: "Encrypted at rest in the repo, decrypted to a runtime path at activation."
+    volatile: true
+
+  - no: "07"
+    name: "MicroVM gateways"
+    layer: "network"
+    href: "/networking/"
+    note: "Isolated cloud-hypervisor guests: a Tor transparent proxy and a Tailscale router."
+    volatile: true
+
+  - no: "08"
+    name: "CUDA AI stack"
+    layer: "services"
+    href: "/system/ai-stack/"
+    note: "Ollama and Open WebUI on the discrete GPU, plus a GPU-passthrough image pipeline."
+    volatile: true
+
+  - no: "09"
+    name: "home-manager"
+    layer: "user profile"
+    href: "/reference/home-manager/"
+    note: "Dotfiles as derivations; the user environment rebuilds with the system."
+    volatile: true
+
+  - no: "10"
+    name: "niri + Noctalia v5"
+    layer: "shell"
+    href: "/desktop/"
+    note: "Scrollable-tiling Wayland compositor under a native Quickshell desktop shell."
+    volatile: true
+
+# Drawn detached, off the main axis, joined by a dashed link — the way a
+# drawing shows a remote sub-assembly that is not part of the main unit.
+detached:
+  no: "11"
+  name: "Nix-on-Droid phone tier"
+  layer: "sub-assembly"
+  href: "/phone/"
+  link: "tailscale"
+  note: "A Nix store on the handset, reached over the tailnet."

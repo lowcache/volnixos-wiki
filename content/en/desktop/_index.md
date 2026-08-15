@@ -1,6 +1,6 @@
 ---
 layout: single
-title: "Desktop Stack Overview 🖥️"
+title: "Desktop Stack"
 weight: 50
 ---
 

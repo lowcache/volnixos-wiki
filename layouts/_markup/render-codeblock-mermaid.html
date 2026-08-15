@@ -12,10 +12,21 @@
   dependency on theme-internal hook names, and means pages without a diagram
   fetch nothing. There are 7 diagrams across the wiki.
 
-  [CEILING]: mermaid is pulled from a CDN, which is the one external request on
-  a site whose theme is otherwise dependency-free. To close that, vendor
-  mermaid.esm.min.mjs into assets/ and swap the import for a resources.Get
-  pipeline. Upgrade path noted for the visual overhaul pass.
+  FIXED in the drawing-set overhaul: this previously read `root.dataset.theme`,
+  an attribute nothing on this site sets — E25DX's color-preference.js writes
+  `data-color`. Every diagram therefore ignored the site's own light/dark
+  toggle and followed the OS preference alone, which was wrong whenever a
+  reader had overridden it. Diagrams now take the site scheme, are drawn in the
+  drawing set's own palette rather than mermaid's stock colours, and re-render
+  when the scheme is toggled.
+
+  [CEILING]: mermaid is still pulled from a CDN — the one external request on a
+  site whose theme is otherwise dependency-free, and the one request that leaks
+  a reader's IP to a third party. Closing it means vendoring
+  mermaid.esm.min.mjs (~3 MB unpacked) into assets/ and swapping the import for
+  a resources.Get pipeline. Deferred deliberately: that is a large binary in a
+  docs repo to serve 7 diagrams, and it is a dependency decision rather than a
+  design one.
 */ -}}
 <pre class="mermaid" aria-label="Diagram">
   {{- .Inner | htmlEscape | safeHTML -}}
@@ -25,18 +36,73 @@
   {{- .Page.Store.Set "mermaidLoaded" true -}}
   <script type="module">
     import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-    // The theme flips colour scheme on <html data-theme>; fall back to the OS
-    // preference when the attribute is absent so the first paint is not wrong.
+
     const root = document.documentElement;
-    const dark =
-      (root.dataset.theme || "").includes("dark") ||
-      (!root.dataset.theme &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: dark ? "dark" : "default",
-      securityLevel: "strict",
-       fontFamily: "inherit",
+    const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+
+    function config() {
+      const dark = root.getAttribute("data-color") === "dark";
+      return {
+        startOnLoad: false,
+        securityLevel: "strict",
+        fontFamily: css("--font-cond") || "inherit",
+        theme: "base",
+        themeVariables: {
+          background: css("--dw-paper-2"),
+          primaryColor: css("--dw-paper-3"),
+          primaryTextColor: css("--dw-line"),
+          primaryBorderColor: css("--dw-line-2"),
+          secondaryColor: css("--dw-paper"),
+          tertiaryColor: css("--dw-paper"),
+          lineColor: css("--dw-cons"),
+          textColor: css("--dw-line"),
+          mainBkg: css("--dw-paper-3"),
+          nodeBorder: css("--dw-line-2"),
+          clusterBkg: dark ? "transparent" : css("--dw-paper"),
+          clusterBorder: css("--dw-hair"),
+          edgeLabelBackground: css("--dw-paper-2"),
+          fontSize: "15px",
+        },
+      };
+    }
+
+    const blocks = Array.from(document.querySelectorAll("pre.mermaid"));
+    // keep the source so a re-render after a scheme change has something to
+    // work from; mermaid replaces the element's contents with SVG
+    blocks.forEach((el) => el.setAttribute("data-src", el.textContent));
+
+    // Renders are serialised through this chain. color-preference.js re-writes
+    // data-color after the early inline script has already set it, so the
+    // observer fires once with an unchanged value; re-entering mermaid.run()
+    // while the first pass is still in flight threw on every page with a
+    // diagram. Track the last scheme actually rendered and skip the no-op.
+    let queue = Promise.resolve();
+    let rendered = null;
+
+    function render() {
+      const scheme = root.getAttribute("data-color");
+      if (scheme === rendered) return queue;
+      rendered = scheme;
+      queue = queue
+        .then(async () => {
+          mermaid.initialize(config());
+          blocks.forEach((el) => {
+            el.removeAttribute("data-processed");
+            el.innerHTML = el.getAttribute("data-src");
+          });
+          await mermaid.run({ nodes: blocks });
+        })
+        .catch((err) => {
+          console.error("[mermaid] render failed", err);
+        });
+      return queue;
+    }
+
+    render();
+
+    new MutationObserver(() => render()).observe(root, {
+      attributes: true,
+      attributeFilter: ["data-color"],
     });
   </script>
 {{- end -}}

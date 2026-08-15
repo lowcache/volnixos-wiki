@@ -1,6 +1,6 @@
 ---
 layout: single
-title: "🌐 Networking & MicroVMs"
+title: "Networking & MicroVMs"
 weight: 20
 ---
 

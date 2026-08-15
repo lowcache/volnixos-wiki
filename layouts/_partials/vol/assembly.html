@@ -1,0 +1,209 @@
+{{- /*
+  EXPLODED ASSEMBLY — the cover sheet's general-assembly drawing.
+
+  Geometry is computed here, not in JavaScript, so the whole drawing
+  exists in the served HTML: it renders with JS disabled, prints, and is
+  crawlable. JS only adds the draw-on, the wipe, and pointer parallax.
+
+  Two interactive layers, deliberately:
+    - the SVG parts are pointer affordances (tabindex=-1, aria-hidden),
+    - the HTML parts list below is the accessible, keyboard-navigable
+      equivalent, carrying the same links and the real text.
+  Neither is a lesser version; a parts drawing IS a figure plus a keyed
+  parts list, so the split is the source form, not a concession.
+
+  MATERIAL SEMANTICS: solid-filled plates persist across a reboot;
+  hatched plates live above the tmpfs datum and are destroyed and
+  re-derived every boot. The hatch is not decoration — it is the state,
+  and it must never disagree with `volatile:` in data/en/assembly.yaml.
+
+  DRAWN HIERARCHY: line weight ramps from heavy at the base of the stack
+  to hair at the top, so nearer parts read nearer, and the datum plate
+  carries the large callout balloon. Both come off the fixed ramps in
+  theme.css rather than from font-weight.
+
+  pathLength="1" on every animated shape normalises the ink-on: the plate
+  outlines and the dimension lines are all different real lengths, so a
+  shared literal stroke-dasharray made short paths finish in the first
+  third of their own animation and pop instead of drawing.
+*/ -}}
+
+{{- $a := index hugo.Data site.Language.Lang "assembly" -}}
+{{- $parts := $a.parts -}}
+{{- $n := len $parts -}}
+
+{{- /* drawing frame */ -}}
+{{- $cx := 420 -}}{{- $hw := 190 -}}{{- $hh := 95 -}}{{- $th := 13 -}}
+{{- $base := 640 -}}{{- $gap := 56 -}}
+{{- $lead := 770 -}}{{- $balx := 792 -}}{{- $dimx := 884 -}}
+{{- $topcy := sub $base (mul $gap (sub $n 1)) -}}
+
+{{- $bidx := 0 -}}
+{{- range $i, $p := $parts }}{{ if $p.boundary }}{{ $bidx = $i }}{{ end }}{{ end -}}
+{{- $by := sub $base (div (mul $gap (sub (mul $bidx 2) 1)) 2) -}}
+
+<figure class="dw-assembly" data-assembly data-boundary="{{ $bidx }}">
+  <svg class="dw-svg" viewBox="0 0 1000 780" role="img"
+       aria-labelledby="dw-assembly-title dw-assembly-desc"
+       preserveAspectRatio="xMidYMid meet">
+    <title id="dw-assembly-title">Exploded assembly drawing of the volnix system</title>
+    <desc id="dw-assembly-desc">Ten stacked components drawn apart on a vertical
+      assembly axis, from the signed boot chain at the base to the Wayland shell
+      at the top, with a detached phone sub-assembly joined over Tailscale. The
+      six components above the tmpfs datum are hatched to mark that they are
+      destroyed and rebuilt on every boot; the four below it persist. The same
+      information is listed as links in the parts list beside this drawing.</desc>
+
+    <defs>
+      <pattern id="dw-hatch" width="7" height="7" patternUnits="userSpaceOnUse"
+               patternTransform="rotate(45)">
+        <line x1="0" y1="0" x2="0" y2="7" class="dw-hatch-line" />
+      </pattern>
+      <pattern id="dw-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M20 0 L0 0 0 20" fill="none" class="dw-grid-line" />
+      </pattern>
+      <marker id="dw-arrow-a" viewBox="0 0 10 10" refX="9" refY="5"
+              markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" class="dw-arrowhead" />
+      </marker>
+    </defs>
+
+    {{- /* sheet graticule + registration marks */ -}}
+    <rect class="dw-graticule" x="0" y="0" width="1000" height="780" fill="url(#dw-grid)" />
+    <g class="dw-regmarks" aria-hidden="true">
+      <path d="M14 44 V14 H44" /><path d="M956 14 H986 V44" />
+      <path d="M986 736 V766 H956" /><path d="M44 766 H14 V736" />
+    </g>
+
+    {{- /* centre line of the assembly axis */ -}}
+    <line class="dw-axis" x1="{{ $cx }}" y1="30" x2="{{ $cx }}" y2="762" />
+
+    {{- /* ---- volatile datum ------------------------------------------
+        Drawn only in the margins so it reads as a datum rather than a
+        line struck through the parts. The left segment and its label sit
+        inside the phone crop and survive there; the far segment does not,
+        so it is marked and dropped rather than left dangling. */ -}}
+    <g class="dw-datum">
+      <line x1="40" y1="{{ $by }}" x2="{{ sub $cx (add $hw 12) }}" y2="{{ $by }}" />
+      <line class="dw-datum__far" x1="{{ add $cx (add $hw 12) }}" y1="{{ $by }}" x2="750" y2="{{ $by }}" />
+      <text x="40" y="{{ sub $by 12 }}">VOLATILE ABOVE</text>
+      <text x="40" y="{{ add $by 21 }}" class="dw-datum-sub">re-derived every boot</text>
+    </g>
+
+    {{- /* ---- dimensions ----------------------------------------------
+        The intervals the stack is exploded across are measured, not left
+        as blank margin: witness lines out to a dimension line, arrowheads
+        both ends, figures read along it. */ -}}
+    <g class="dw-dims" aria-hidden="true">
+      <line class="dw-witness" x1="{{ add $balx 24 }}" y1="{{ $topcy }}" x2="{{ add $dimx 14 }}" y2="{{ $topcy }}" />
+      <line class="dw-witness" x1="{{ add $balx 24 }}" y1="{{ $by }}" x2="{{ add $dimx 14 }}" y2="{{ $by }}" />
+      <line class="dw-witness" x1="{{ add $balx 24 }}" y1="{{ $base }}" x2="{{ add $dimx 14 }}" y2="{{ $base }}" />
+
+      <line class="dw-dimline" x1="{{ $dimx }}" y1="{{ $topcy }}" x2="{{ $dimx }}" y2="{{ $by }}"
+            marker-start="url(#dw-arrow-a)" marker-end="url(#dw-arrow-a)" />
+      <line class="dw-dimline" x1="{{ $dimx }}" y1="{{ $by }}" x2="{{ $dimx }}" y2="{{ $base }}"
+            marker-start="url(#dw-arrow-a)" marker-end="url(#dw-arrow-a)" />
+
+      {{- $vmid := div (add $topcy $by) 2 -}}
+      {{- $pmid := div (add $by $base) 2 -}}
+      <text class="dw-dimfig" x="{{ sub $dimx 8 }}" y="{{ $vmid }}"
+            transform="rotate(-90 {{ sub $dimx 8 }} {{ $vmid }})"
+            text-anchor="middle">{{ sub $n $bidx }} VOLATILE</text>
+      <text class="dw-dimfig dw-dimfig--persist" x="{{ sub $dimx 8 }}" y="{{ $pmid }}"
+            transform="rotate(-90 {{ sub $dimx 8 }} {{ $pmid }})"
+            text-anchor="middle">{{ $bidx }} PERSIST</text>
+    </g>
+
+    {{- /* ---- detached sub-assembly (phone tier) ----------------------
+        Drawn SOLID, not hatched: the handset is a separate machine with
+        its own Nix store and does not lose state when volnix reboots.
+        Hatching it contradicted both its parts-list row and the Rebuild,
+        which correctly leaves it standing. */ -}}
+    {{- with $a.detached -}}
+    {{- $dx := 118 -}}{{- $dy := 292 -}}{{- $dhw := 66 -}}{{- $dhh := 33 -}}
+    <a class="dw-part dw-part--detached" data-part="detached"
+       href="{{ .href | relLangURL }}" tabindex="-1" aria-hidden="true">
+      <polygon class="dw-face dw-face--top" pathLength="1"
+               points="{{ $dx }},{{ sub $dy $dhh }} {{ add $dx $dhw }},{{ $dy }} {{ $dx }},{{ add $dy $dhh }} {{ sub $dx $dhw }},{{ $dy }}" />
+      <polygon class="dw-face dw-face--l" pathLength="1"
+               points="{{ sub $dx $dhw }},{{ $dy }} {{ $dx }},{{ add $dy $dhh }} {{ $dx }},{{ add (add $dy $dhh) 9 }} {{ sub $dx $dhw }},{{ add $dy 9 }}" />
+      <polygon class="dw-face dw-face--r" pathLength="1"
+               points="{{ add $dx $dhw }},{{ $dy }} {{ $dx }},{{ add $dy $dhh }} {{ $dx }},{{ add (add $dy $dhh) 9 }} {{ add $dx $dhw }},{{ add $dy 9 }}" />
+      <line class="dw-leader" x1="{{ $dx }}" y1="{{ sub $dy 60 }}" x2="{{ $dx }}" y2="{{ sub $dy $dhh }}" />
+      <g class="dw-balloon dw-balloon--sm">
+        <circle cx="{{ $dx }}" cy="{{ sub $dy 74 }}" r="13" />
+        <text x="{{ $dx }}" y="{{ sub $dy 69 }}" text-anchor="middle">{{ .no }}</text>
+      </g>
+    </a>
+    {{- /* dashed remote link to the gateway plate */ -}}
+    {{- $gi := 0 -}}
+    {{- range $i, $p := $parts }}{{ if eq $p.layer "network" }}{{ $gi = $i }}{{ end }}{{ end -}}
+    {{- $gcy := sub $base (mul $gap $gi) -}}
+    <g class="dw-remote">
+      <path d="M{{ add $dx $dhw }},{{ $dy }} C 190,{{ $dy }} 190,{{ $gcy }} {{ sub $cx $hw }},{{ $gcy }}" />
+      <text x="{{ $dx }}" y="{{ add $dy 62 }}" text-anchor="middle">{{ .link }}</text>
+    </g>
+    {{- end -}}
+
+    {{- /* ---- the stack ----------------------------------------------
+        --depth-n counts DOWN the stack, so index 0 (the base plate, the
+        one nearest the reader) gets the heaviest line. */ -}}
+    <g class="dw-stack">
+    {{- range $i, $p := $parts -}}
+      {{- $cy := sub $base (mul $gap $i) -}}
+      {{- $top := sub $cy $hh -}}{{- $bot := add $cy $hh -}}
+      {{- $l := sub $cx $hw -}}{{- $r := add $cx $hw -}}
+      {{- $bt := add $bot $th -}}{{- $lt := add $cy $th -}}
+      <a class="dw-part{{ if $p.volatile }} dw-part--volatile{{ end }}{{ if $p.boundary }} dw-part--boundary{{ end }}"
+         data-part="{{ $i }}" style="--i:{{ $i }}; --depth-n:{{ sub (sub $n 1) $i }}"
+         href="{{ $p.href | relLangURL }}" tabindex="-1" aria-hidden="true">
+        <polygon class="dw-face dw-face--l" pathLength="1" points="{{ $l }},{{ $cy }} {{ $cx }},{{ $bot }} {{ $cx }},{{ $bt }} {{ $l }},{{ $lt }}" />
+        <polygon class="dw-face dw-face--r" pathLength="1" points="{{ $r }},{{ $cy }} {{ $cx }},{{ $bot }} {{ $cx }},{{ $bt }} {{ $r }},{{ $lt }}" />
+        <polygon class="dw-face dw-face--top{{ if $p.volatile }} dw-face--hatched{{ end }}" pathLength="1"
+                 points="{{ $cx }},{{ $top }} {{ $r }},{{ $cy }} {{ $cx }},{{ $bot }} {{ $l }},{{ $cy }}" />
+        <line class="dw-leader" x1="{{ $r }}" y1="{{ $cy }}" x2="{{ $lead }}" y2="{{ $cy }}" />
+        <g class="dw-balloon{{ if $p.boundary }} dw-balloon--lg{{ end }}">
+          <circle cx="{{ $balx }}" cy="{{ $cy }}" r="{{ cond $p.boundary 18 15 }}" />
+          <text x="{{ $balx }}" y="{{ add $cy 5 }}" text-anchor="middle">{{ $p.no }}</text>
+        </g>
+      </a>
+    {{- end -}}
+    </g>
+  </svg>
+
+  {{- /* ---- parts list: the accessible, keyed equivalent ------------- */ -}}
+  <figcaption class="dw-parts">
+    <p class="dw-parts__head">
+      <span>Parts list</span>
+      <button type="button" class="dw-rebuild" data-rebuild>
+        <span class="dw-rebuild__dot" aria-hidden="true"></span>Rebuild
+      </button>
+    </p>
+    <ol class="dw-parts__list">
+      {{- range $i, $p := $parts }}
+      <li class="dw-parts__item{{ if $p.volatile }} is-volatile{{ end }}{{ if $p.boundary }} is-boundary{{ end }}" data-part="{{ $i }}">
+        <a href="{{ $p.href | relLangURL }}">
+          <span class="dw-parts__no">{{ $p.no }}</span>
+          <span class="dw-parts__body">
+            <span class="dw-parts__name">{{ $p.name }}</span>
+            <span class="dw-parts__layer">{{ $p.layer }}</span>
+            <span class="dw-parts__note">{{ $p.note }}</span>
+          </span>
+        </a>
+      </li>
+      {{- end }}
+      {{- with $a.detached }}
+      <li class="dw-parts__item dw-parts__item--detached" data-part="detached">
+        <a href="{{ .href | relLangURL }}">
+          <span class="dw-parts__no">{{ .no }}</span>
+          <span class="dw-parts__body">
+            <span class="dw-parts__name">{{ .name }}</span>
+            <span class="dw-parts__layer">{{ .layer }} · over {{ .link }}</span>
+            <span class="dw-parts__note">{{ .note }}</span>
+          </span>
+        </a>
+      </li>
+      {{- end }}
+    </ol>
+  </figcaption>
+</figure>

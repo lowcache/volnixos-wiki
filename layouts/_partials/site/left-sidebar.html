@@ -19,7 +19,16 @@
 	</div>
 
 	<a href="{{ site.Home.Permalink }}" class="site-logo">
-		<img height="52px" src="{{ "assets/logo.png" | absURL }}" alt="Site Logo">
+		<svg class="dw-mark" viewBox="0 0 46 46" aria-hidden="true" focusable="false">
+			<line class="dw-mark__axis" x1="23" y1="3" x2="23" y2="43" />
+			<polygon class="dw-mark__plate" points="23,26 40,34 23,42 6,34" />
+			<polygon class="dw-mark__plate" points="23,15 40,23 23,31 6,23" />
+			<polygon class="dw-mark__plate dw-mark__plate--volatile" points="23,4 40,12 23,20 6,12" />
+		</svg>
+		<span class="dw-wordmark">
+			<span class="dw-wordmark__name">Volatile</span>
+			<span class="dw-wordmark__sub">NixOS · drawing set</span>
+		</span>
 	</a>
 
 	{{- $cur := page -}}

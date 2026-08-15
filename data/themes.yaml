@@ -1,0 +1,17 @@
+# Shadows E25DX's own data/themes.yaml.
+#
+# The theme's swatches are its yellow-on-white / yellow-on-near-black pair,
+# which after the drawing-set overhaul advertised colours the site no longer
+# uses — the picker showed one palette and the page rendered another.
+#
+# `value` must stay "light"/"dark": js/site/color-preference.js writes it
+# straight into <html data-color> and assets/css/theme.css keys its dark
+# block off :root[data-color="dark"].
+- name: Vellum — the paper positive
+  value: light
+  background: "#e9e4d7"
+  color: "#12181f"
+- name: Ink — the negative
+  value: dark
+  background: "#0b1016"
+  color: "#dfe6ef"

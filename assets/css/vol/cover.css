@@ -1,0 +1,571 @@
+/* =====================================================================
+   COVER SHEET — the general-assembly drawing.
+
+   MOTION CONTRACT
+   One authored moment, not scattered effects: the assembly draws itself
+   on, then the volatile half is wiped and re-drawn — which is what the
+   machine does on every boot. Everything else is a 150ms state change.
+
+   Under prefers-reduced-motion the drawing is fully present and fully
+   legible from the first frame, the wipe becomes an instant state swap,
+   and the Rebuild control still works. Nothing on this page carries
+   meaning that exists only while it moves.
+   ===================================================================== */
+
+.dw-cover {
+  padding: var(--dw-s6) var(--dw-s4) 0;
+}
+
+/* ---- masthead -------------------------------------------------------- */
+
+.dw-masthead {
+  padding-bottom: var(--dw-s5);
+  border-bottom: var(--dw-lw-thin) solid var(--dw-line-3);
+  box-shadow: 0 3px 0 -2px var(--dw-hair);
+}
+.dw-masthead__title {
+  font-size: clamp(3rem, 1.4rem + 7vw, 6rem);
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  line-height: 0.94;
+}
+.dw-masthead__lede {
+  margin-top: var(--dw-s2);
+  font-family: var(--font-cond);
+  font-size: clamp(1.05rem, 0.9rem + 0.7vw, 1.35rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  /* NOT magenta: this is emphasis, and magenta is reserved for "the part
+     under discussion". Weight and tracking carry it instead. */
+  color: var(--dw-line-2);
+}
+.dw-masthead__desc {
+  margin-top: var(--dw-s4);
+  max-width: var(--dw-measure);
+  color: var(--dw-line-2);
+  text-wrap: pretty;
+}
+
+/* ---- the assembly ---------------------------------------------------- */
+
+.dw-assembly {
+  margin: var(--dw-s6) 0 0;
+  display: grid;
+  gap: var(--dw-s5);
+}
+
+.dw-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* --- drawn elements --- */
+
+.dw-graticule { opacity: 0.55; }
+.dw-grid-line {
+  stroke: var(--dw-hair);
+  stroke-width: 0.5;
+  fill: none;
+}
+.dw-regmarks {
+  fill: none;
+  stroke: var(--dw-line-3);
+  stroke-width: 1;
+}
+.dw-axis {
+  stroke: var(--dw-cons);
+  stroke-width: 0.75;
+  stroke-dasharray: 14 5 3 5;
+  opacity: 0.75;
+}
+
+.dw-datum line {
+  stroke: var(--dw-cons);
+  stroke-width: 1;
+  stroke-dasharray: 8 4;
+}
+.dw-datum text {
+  fill: var(--dw-cons);
+  font-family: var(--font-cond);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.dw-datum-sub {
+  fill: var(--dw-line-3) !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.05em !important;
+  text-transform: none !important;
+}
+
+.dw-remote path {
+  fill: none;
+  stroke: var(--dw-cons);
+  stroke-width: 1;
+  stroke-dasharray: 5 4;
+}
+.dw-remote text {
+  fill: var(--dw-cons);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.dw-hatch-line {
+  stroke: var(--dw-line-2);
+  stroke-width: 1;
+}
+
+/* --- dimensions: the exploded intervals, measured --- */
+
+.dw-dims { pointer-events: none; }
+.dw-witness,
+.dw-dimline {
+  stroke: var(--dw-cons);
+  stroke-width: 0.8;
+}
+.dw-witness { stroke-dasharray: 3 3; opacity: 0.7; }
+.dw-arrowhead { fill: var(--dw-cons); }
+.dw-dimfig {
+  fill: var(--dw-cons);
+  font-family: var(--font-cond);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+.dw-dimfig--persist { fill: var(--dw-line-3); }
+
+/* --- plates --- */
+
+.dw-part {
+  cursor: pointer;
+  /* depth on the assembly axis: nearer plates draw heavier and shift
+     further under the pointer, so the stack has a real Z axis */
+  --depth: calc(1 + var(--i, 0) * 0.09);
+}
+
+.dw-face {
+  stroke: var(--dw-line);
+  /* nearer plates draw heavier: --depth-n counts down from the top of the
+     stack, so the base plate gets the heavy weight and the top plate the
+     hair weight, on the fixed ramp rather than by eye */
+  stroke-width: calc(0.95px + var(--depth-n, 4) * 0.075px);
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
+  transition: fill 0.18s var(--dw-ease), stroke 0.18s var(--dw-ease);
+}
+.dw-face--top { fill: var(--dw-paper-3); }
+.dw-face--l { fill: var(--dw-paper-2); }
+.dw-face--r { fill: var(--dw-paper); }
+
+/* hatched = lives above the tmpfs datum = destroyed every boot.
+   This is state, not texture. */
+.dw-face--hatched { fill: url(#dw-hatch); }
+
+.dw-leader {
+  stroke: var(--dw-cons);
+  stroke-width: 0.9;
+  stroke-dasharray: 6 4;
+}
+
+.dw-balloon circle {
+  fill: var(--dw-paper);
+  stroke: var(--dw-line-2);
+  stroke-width: 1.2;
+  transition: fill 0.18s var(--dw-ease), stroke 0.18s var(--dw-ease);
+}
+.dw-balloon text {
+  fill: var(--dw-line);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  transition: fill 0.18s var(--dw-ease);
+}
+.dw-balloon--sm text { font-size: 14px; }
+
+/* the datum plate is marked by default, so "magenta = the part under
+   discussion" is learnable on arrival rather than only on hover. Any real
+   interaction takes over via .is-lit below. */
+.dw-assembly:not(.is-lit) .dw-part--boundary .dw-face { stroke: var(--dw-mark); }
+.dw-assembly:not(.is-lit) .dw-part--boundary .dw-balloon circle {
+  fill: var(--dw-mark);
+  stroke: var(--dw-mark);
+}
+.dw-assembly:not(.is-lit) .dw-part--boundary .dw-balloon text { fill: var(--dw-paper); }
+
+/* --- the lit state: exactly one part wears the magenta --- */
+
+.dw-assembly.is-lit .dw-part:not(.is-lit) .dw-face {
+  stroke: var(--dw-line-3);
+}
+.dw-assembly.is-lit .dw-part:not(.is-lit) .dw-balloon circle {
+  stroke: var(--dw-line-3);
+}
+.dw-assembly.is-lit .dw-part:not(.is-lit) .dw-balloon text {
+  fill: var(--dw-line-3);
+}
+
+.dw-part.is-lit .dw-face { stroke: var(--dw-mark); stroke-width: 2; }
+.dw-part.is-lit .dw-face--top { fill: var(--dw-mark-dim); }
+.dw-part.is-lit .dw-leader { stroke: var(--dw-mark); stroke-dasharray: none; }
+.dw-part.is-lit .dw-balloon circle { fill: var(--dw-mark); stroke: var(--dw-mark); }
+.dw-part.is-lit .dw-balloon text { fill: var(--dw-paper); }
+
+/* the part pulls out of the stack along the assembly axis — you can
+   take one part, which is the whole position of this configuration */
+.dw-part {
+  transition: transform 0.32s var(--dw-ease);
+}
+.dw-part.is-lit { transform: translateX(26px); }
+
+/* --- pointer parallax on the Z axis --- */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .dw-stack .dw-part {
+    transform: translate3d(
+      calc(var(--px, 0) * var(--depth) * 1px),
+      calc(var(--py, 0) * var(--depth) * 1px),
+      0
+    );
+  }
+  .dw-stack .dw-part.is-lit {
+    transform: translate3d(
+      calc(26px + var(--px, 0) * var(--depth) * 1px),
+      calc(var(--py, 0) * var(--depth) * 1px),
+      0
+    );
+  }
+}
+
+/* ---- parts list ------------------------------------------------------ */
+
+.dw-parts {
+  min-width: 0;
+}
+.dw-parts__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dw-s3);
+  padding-bottom: var(--dw-s2);
+  border-bottom: var(--dw-lw-thin) solid var(--dw-line-3);
+}
+
+.dw-rebuild {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-s2);
+  padding: 5px var(--dw-s3);
+  font-family: var(--font-cond);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--dw-mark);
+  background: transparent;
+  border: var(--dw-lw-thin) solid var(--dw-mark);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 0.15s var(--dw-ease), color 0.15s var(--dw-ease);
+}
+.dw-rebuild:hover {
+  background: var(--dw-mark);
+  color: var(--dw-paper);
+}
+.dw-rebuild[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+.dw-rebuild__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.dw-parts__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: none;
+}
+.dw-parts__item {
+  border-bottom: var(--dw-lw-hair) solid var(--dw-hair);
+}
+.dw-parts__item > a {
+  display: grid;
+  grid-template-columns: 2.75rem 1fr;
+  gap: var(--dw-s2);
+  padding: var(--dw-s2) var(--dw-s2) var(--dw-s2) 0;
+  text-decoration: none;
+  transition: background 0.15s var(--dw-ease);
+}
+.dw-parts__item > a:hover,
+.dw-parts__item.is-lit > a {
+  background: var(--dw-t2);
+}
+/* the keys in a parts list reference the drawing's callout balloons, so they
+   are drawn as balloons. This is also what keys the default-marked plate on a
+   phone, where the SVG balloons are hidden. */
+.dw-parts__no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--dw-line-2);
+  border: var(--dw-lw-thin) solid var(--dw-line-3);
+  border-radius: 50%;
+}
+.dw-parts__item.is-lit .dw-parts__no,
+.dw-assembly:not(.is-lit) .dw-parts__item.is-boundary .dw-parts__no {
+  color: var(--dw-paper);
+  background: var(--dw-mark);
+  border-color: var(--dw-mark);
+}
+.dw-parts__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.dw-parts__name {
+  font-family: var(--font-cond);
+  font-size: 1.06rem;
+  font-weight: 600;
+  color: var(--dw-line);
+  line-height: 1.2;
+}
+.dw-parts__note {
+  font-size: 0.84rem;
+  line-height: 1.42;
+  color: var(--dw-line-3);
+  text-wrap: pretty;
+}
+
+/* volatile rows carry the same hatch the plates do, as a drawn strip at the
+   row's edge rather than a coloured rule */
+.dw-parts__item.is-volatile > a { position: relative; }
+.dw-parts__item.is-volatile > a::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--dw-line-3) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+.dw-parts__item--detached {
+  border-top: var(--dw-lw-thin) dashed var(--dw-cons);
+}
+
+/* ---- sheet index ------------------------------------------------------ */
+
+.dw-notes,
+.dw-index {
+  margin-top: var(--dw-s9);
+}
+
+.dw-index__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.94rem;
+}
+.dw-index__caption {
+  text-align: left;
+  padding-bottom: var(--dw-s3);
+  color: var(--dw-line-3);
+  font-size: 0.88rem;
+}
+.dw-index__table :is(th, td) {
+  padding: var(--dw-s3) var(--dw-s3);
+  text-align: left;
+  vertical-align: baseline;
+  border-bottom: var(--dw-lw-hair) solid var(--dw-hair);
+}
+.dw-index__table thead th {
+  border-bottom: var(--dw-lw-thin) solid var(--dw-line-3);
+  padding-block: var(--dw-s2);
+}
+.dw-index__table tbody tr:hover { background: var(--dw-t1); }
+.dw-index__no {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--dw-mark);
+  white-space: nowrap;
+}
+.dw-index__title a {
+  font-family: var(--font-cond);
+  font-size: 1.14rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--dw-line);
+}
+.dw-index__title a:hover { text-decoration: underline; }
+.dw-index__contents {
+  color: var(--dw-line-3);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+.dw-index__count {
+  text-align: right;
+  color: var(--dw-line-3);
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+}
+
+.dw-cover .dw-titleblock {
+  margin-top: var(--dw-s9);
+  margin-bottom: var(--dw-s7);
+}
+
+/* =====================================================================
+   MOTION — the one authored moment
+   ===================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* draw-on: each plate is inked in, bottom of the stack upward */
+  .dw-assembly.is-drawing .dw-face {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: dw-ink 0.72s var(--dw-ease-mech) forwards;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+  /* leaders are dashed by nature; inking them would overwrite that dash and
+     snap it back at the end, so they fade in on their plate's beat instead */
+  .dw-assembly.is-drawing .dw-leader,
+  .dw-assembly.is-drawing .dw-dims {
+    opacity: 0;
+    animation: dw-fade 0.45s var(--dw-ease) forwards;
+    animation-delay: calc(var(--i, 0) * 70ms + 300ms);
+  }
+  .dw-assembly.is-drawing .dw-face--top,
+  .dw-assembly.is-drawing .dw-face--l,
+  .dw-assembly.is-drawing .dw-face--r {
+    fill-opacity: 0;
+    animation:
+      dw-ink 0.72s var(--dw-ease-mech) forwards,
+      dw-fill 0.5s var(--dw-ease) forwards;
+    animation-delay: calc(var(--i, 0) * 70ms), calc(var(--i, 0) * 70ms + 260ms);
+  }
+  .dw-assembly.is-drawing .dw-balloon {
+    opacity: 0;
+    animation: dw-pop 0.4s var(--dw-ease) forwards;
+    animation-delay: calc(var(--i, 0) * 70ms + 420ms);
+  }
+
+  /* the wipe: hatching is stripped, then the volatile plates lift off
+     the stack and go — the tmpfs root and everything it carries */
+  .dw-assembly.is-wiping .dw-part--volatile {
+    animation: dw-lift 0.62s var(--dw-ease-mech) forwards;
+    animation-delay: calc((var(--i, 0) - 4) * 55ms);
+  }
+  .dw-assembly.is-wiping .dw-part--volatile .dw-face--hatched {
+    animation: dw-dehatch 0.3s linear forwards;
+    animation-delay: calc((var(--i, 0) - 4) * 55ms);
+  }
+
+  /* and re-derived: only the volatile half is re-inked, because only the
+     volatile half was destroyed. The plates below the datum never move. */
+  .dw-assembly.is-redrawing .dw-part--volatile .dw-face {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: dw-ink 0.62s var(--dw-ease-mech) forwards;
+    animation-delay: calc((var(--i, 0) - 4) * 68ms);
+  }
+  .dw-assembly.is-redrawing .dw-part--volatile .dw-leader {
+    opacity: 0;
+    animation: dw-fade 0.4s var(--dw-ease) forwards;
+    animation-delay: calc((var(--i, 0) - 4) * 68ms + 260ms);
+  }
+  .dw-assembly.is-redrawing .dw-part--volatile .dw-face--top,
+  .dw-assembly.is-redrawing .dw-part--volatile .dw-face--l,
+  .dw-assembly.is-redrawing .dw-part--volatile .dw-face--r {
+    fill-opacity: 0;
+    animation:
+      dw-ink 0.62s var(--dw-ease-mech) forwards,
+      dw-fill 0.45s var(--dw-ease) forwards;
+    animation-delay:
+      calc((var(--i, 0) - 4) * 68ms),
+      calc((var(--i, 0) - 4) * 68ms + 220ms);
+  }
+  .dw-assembly.is-redrawing .dw-part--volatile .dw-balloon {
+    opacity: 0;
+    animation: dw-pop 0.36s var(--dw-ease) forwards;
+    animation-delay: calc((var(--i, 0) - 4) * 68ms + 340ms);
+  }
+}
+
+@keyframes dw-ink {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes dw-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dw-fill {
+  from { fill-opacity: 0; }
+  to { fill-opacity: 1; }
+}
+@keyframes dw-pop {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes dw-lift {
+  0% { opacity: 1; transform: translateY(0); }
+  35% { opacity: 1; transform: translateY(6px); }
+  100% { opacity: 0; transform: translateY(-58px); }
+}
+@keyframes dw-dehatch {
+  to { fill-opacity: 0.08; }
+}
+
+.dw-balloon { transform-box: fill-box; transform-origin: center; }
+
+/* =====================================================================
+   RESPONSIVE
+   ===================================================================== */
+
+@media (max-width: 743px) {
+  /* micro-type in a scaled-down drawing is worse than no type: the
+     leaders and balloons drop out and the parts list carries the
+     numbering, which is the same information */
+  .dw-leader,
+  .dw-balloon,
+  .dw-dims { display: none; }
+  /* the datum carries the thesis — everything above it is destroyed every
+     boot — so it stays. Only its far segment, which falls outside the
+     cropped viewBox, and the expendable remote label are dropped. */
+  .dw-datum__far,
+  .dw-remote text { display: none; }
+  /* sized to the 178 viewBox units between the sheet edge and the stack's
+     left vertex, so the annotation never crosses the parts it describes */
+  .dw-datum text { font-size: 19px; }
+  .dw-datum-sub { font-size: 15px !important; }
+}
+
+@media (min-width: 1024px) {
+  .dw-cover { padding-inline: var(--dw-s6); }
+  .dw-assembly {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: var(--dw-s6);
+    align-items: start;
+  }
+  .dw-notes,
+  .dw-index { margin-top: var(--dw-s9); }
+}

@@ -1,0 +1,12 @@
+{{- /*
+  Preloads only the two faces that render above the fold on every page:
+  the condensed drafting lettering used for headings, labels and the
+  title block, and the body weight. The remaining weights load on demand
+  through @font-face in theme.css.
+
+  Self-hosted latin subsets — no request leaves the origin, which also
+  keeps the site's own privacy posture honest given analytics are wired.
+*/ -}}
+<link rel="preload" href="/fonts/barlow-condensed-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/barlow-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="/mark.svg" type="image/svg+xml">

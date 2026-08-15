@@ -1,0 +1,27 @@
+{{- /*
+  Shadows E25DX's components/theme-dropdown.html.
+
+  Identical markup and classes — dropdown.js and color-preference.js query
+  .dropdown-btn, .dropdown-menu and .color-scheme, so none of it may move.
+  Two changes: site.Data is swapped for hugo.Data (the former is deprecated
+  as of Hugo v0.156 and this partial was the last thing in the build still
+  emitting that warning), and each swatch gets an accessible name and
+  aria-pressed state — the stock version renders two unlabelled buttons whose
+  only content is the word "Aa".
+*/ -}}
+<div id="theme-dropdown" class="dropdown">
+	<button class="dropdown-btn" aria-haspopup="menu" aria-label="Select the colour scheme">
+		<span>{{ partial "icon.html" "palette" }}</span>
+		<span>{{ partial "icon.html" "unfold_more" }}</span>
+	</button>
+	<ul role="menu" class="dropdown-menu">
+		{{ range index hugo.Data "themes" }}
+		<li role="menuitem">
+			<button title="{{ .name }}" aria-label="{{ .name }}" class="color-scheme" data-value="{{ .value }}"
+			        style="background:{{ .background }};color:{{ .color }};">
+				<span style="color:{{ .color }}" aria-hidden="true">Aa</span>
+			</button>
+		</li>
+		{{ end }}
+	</ul>
+</div>

@@ -1,0 +1,23 @@
+{{- /*
+  Sets data-color before first paint.
+
+  E25DX's color-preference.js runs from the end of <body>, so the page
+  paints in the light scheme and then snaps to dark — a full-page flash
+  on every navigation for the majority of this site's readers, who are
+  on dark. This mirrors that script's storage key and defaulting exactly,
+  so the two never disagree; color-preference.js still owns the toggle.
+*/ -}}
+<script>
+  (function () {
+    try {
+      var k = 'color-preference',
+          v = localStorage.getItem(k);
+      if (v === null) {
+        v = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-color', v);
+    } catch (e) {
+      document.documentElement.setAttribute('data-color', 'dark');
+    }
+  })();
+</script>

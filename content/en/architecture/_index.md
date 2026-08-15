@@ -1,6 +1,6 @@
 ---
 layout: single
-title: "🧬 Architecture"
+title: "Architecture"
 weight: 10
 ---
 

@@ -1,0 +1,61 @@
+{{- /*
+  Project override of E25DX's site/header.html.
+
+  Two things the stock partial gets wrong for this site, beyond styling:
+
+  1. It renders the logo as <img src="/logo.svg">, a file this site does
+     not ship — every page served a broken image. The mark is inlined as
+     SVG here instead, so it inherits currentColor and follows the
+     colour scheme.
+  2. It uses site.Params.project.repo.main ("lowcache/volnixos-wiki")
+     directly as an href, which resolves as a RELATIVE path, not GitHub.
+     The repository link is built properly below.
+
+  The mark is the drawing in miniature: three plates on an assembly
+  axis, the top one dashed because it does not survive a reboot.
+*/ -}}
+
+<header id="site-header">
+  <div id="site-header-logo">
+    <a href="{{ site.Home.Permalink }}" aria-label="{{ site.Title }} — cover sheet">
+      <svg class="dw-mark" viewBox="0 0 46 46" aria-hidden="true" focusable="false">
+        <line class="dw-mark__axis" x1="23" y1="3" x2="23" y2="43" />
+        <polygon class="dw-mark__plate" points="23,26 40,34 23,42 6,34" />
+        <polygon class="dw-mark__plate" points="23,15 40,23 23,31 6,23" />
+        <polygon class="dw-mark__plate dw-mark__plate--volatile" points="23,4 40,12 23,20 6,12" />
+      </svg>
+      <span class="dw-wordmark">
+        <span class="dw-wordmark__name">Volatile</span>
+        <span class="dw-wordmark__sub">NixOS · drawing set</span>
+      </span>
+    </a>
+  </div>
+
+  <div id="site-header-actions">
+    <div id="search-box">
+      <pagefind-modal-trigger compact="true"></pagefind-modal-trigger>
+      <pagefind-modal></pagefind-modal>
+    </div>
+
+    {{ partial "components/theme-dropdown.html" . }}
+
+    <a id="repo-main" aria-label="Source repository on GitHub"
+       href="https://github.com/{{ site.Params.project.repo.main }}"
+       rel="external noopener" target="_blank">
+      {{ partial "icon.html" "github" }}
+    </a>
+  </div>
+
+  {{ with site.Menus.main }}
+  <nav id="site-header-menu" aria-label="Main">
+    {{ range . }}
+      {{ $active := or (eq $.Section .Identifier) (eq $.RelPermalink .URL) }}
+      <a href="{{ .URL | absLangURL }}"{{ if $active }} class="active" aria-current="page"{{ end }}>
+        <span class="dw-nav__ico">{{ partial "icon.html" .Params.icon }}</span>
+        <span class="dw-nav__name">{{ .Name }}</span>
+        <span class="dw-nav__sheet">VN-{{ mul .Weight 10 }}</span>
+      </a>
+    {{ end }}
+  </nav>
+  {{ end }}
+</header>

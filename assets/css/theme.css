@@ -1,0 +1,337 @@
+/* =====================================================================
+   VOLATILE NIXOS — DRAWING SET
+   Token layer. This file SHADOWS E25DX's own assets/css/theme.css.
+
+   Hugo resolves `resources.Get "css/theme.css"` against the project's
+   assets/ mount before the module's, so this file replaces the theme's
+   token file wholesale on every layout that loads it. Every custom
+   property E25DX's component CSS reads is therefore redefined here —
+   removing one silently un-styles part of the theme.
+
+   WORLD: a service-manual exploded assembly drawing.
+   Dark is the primary scheme: a negative/diazo reversal, white line on
+   ink stock, the drawing on a light table at 2am. Light is the paper
+   positive, printed on drafting vellum.
+
+   Colour carries exactly four roles and never decorates:
+     ink / paper   the stock
+     line          everything drawn
+     MAGENTA       "this is the part under discussion" — nothing else
+     cyan          construction: leaders, dimensions, centre-marks
+   ===================================================================== */
+
+/* ---- lettering ------------------------------------------------------
+   Self-hosted latin subsets; no external font request. Barlow is an
+   industrial/transport grotesk — the same lineage as drafting stencil
+   lettering — so labels and prose share one lettering standard, the way
+   a drawing set does. JetBrains Mono sets code and measured figures. */
+
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/barlow-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/barlow-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/barlow-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/barlow-condensed-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/barlow-condensed-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/barlow-condensed-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-700.woff2") format("woff2");
+}
+
+:root {
+  /* ---- drawing world: stock, line, roles (LIGHT = paper positive) --- */
+  --dw-paper: #e9e4d7;
+  --dw-paper-2: #e2dccc;
+  --dw-paper-3: #d8d1bd;
+  --dw-line: #12181f;
+  --dw-line-2: #4c5765;
+  /* 4.86:1 on the vellum ground. The previous #8b93a0 measured
+     2.44:1 — a hard fail for the hero's own explanatory copy. */
+  --dw-line-3: #5a626d;
+  --dw-hair: #b9b2a0;
+  --dw-mark: #c4106c;
+  --dw-mark-dim: #c4106c26;
+  --dw-cons: #26647f;
+  --dw-cons-dim: #26647f33;
+
+  /* fixed tonal ramp — every surface tone is a named step, never a
+     free-form alpha. Four bound steps, from the stock toward the line. */
+  --dw-t1: #00000008;
+  --dw-t2: #00000012;
+  --dw-t3: #0000001f;
+  --dw-t5: #00000047;
+
+  /* line-weight ramp — hierarchy is carried by drawn weight, not by
+     font-weight, so a page ranks itself with all type at one size. */
+  --dw-lw-hair: 0.5px;
+  --dw-lw-thin: 1px;
+  --dw-lw-med: 1.5px;
+  --dw-lw-heavy: 2.5px;
+
+  /* drawing module — nothing sits off this grid, type baselines included */
+  --dw-mod: 8px;
+  --dw-s1: 4px;
+  --dw-s2: 8px;
+  --dw-s3: 16px;
+  --dw-s4: 24px;
+  --dw-s5: 32px;
+  --dw-s6: 48px;
+  --dw-s7: 64px;
+  --dw-s8: 96px;
+  --dw-s9: 128px;
+
+  /* NOTE: callout balloon diameters are deliberately NOT tokens. The drawn
+     balloons are SVG `r` in viewBox units (13 / 15 / 18, see
+     _partials/vol/assembly.html) and the parts-list key is 1.75rem — two
+     different coordinate systems that one px token cannot express honestly. */
+
+  --dw-sheet-max: 1320px;
+  --dw-measure: 68ch;
+  --dw-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dw-ease-mech: cubic-bezier(0.33, 0, 0.15, 1);
+
+  /* ---- E25DX contract ---------------------------------------------- */
+  --font-sans: "Barlow", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-cond: "Barlow Condensed", "Barlow", ui-sans-serif, system-ui,
+    sans-serif;
+  --font-serif: var(--font-sans);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", monospace;
+
+  --primary: var(--dw-mark);
+
+  --background: var(--dw-paper);
+  --background-subtle: var(--dw-t2);
+  --background-hover: var(--dw-t3);
+  --background-dim: var(--dw-t1);
+
+  --color: var(--dw-line);
+  --color-fade: var(--dw-line-3);
+  --color-nav: var(--dw-line-2);
+
+  /* depth is offset + blur; a drawing sheet lifts off the board, it does
+     not emit a halo */
+  --box-shadow: 0 18px 40px -18px #12181f4d, 0 2px 6px -2px #12181f26;
+
+  --model-background: var(--dw-paper);
+  --model-foreground: var(--dw-t2);
+  --model-box-shadow: 0 24px 60px -20px #12181f59;
+
+  --padding: 12px;
+  --padding_d2: 6px;
+  --padding_x2: 24px;
+
+  --blur: 4px;
+  --model-blur: 10px;
+
+  --border: var(--dw-hair);
+  --border-nav: var(--dw-line-3);
+  --border-subtle: var(--dw-t3);
+
+  /* drawings are ruled, not rounded */
+  --radius: 0px;
+
+  --anchor: var(--dw-cons);
+  --hover: var(--dw-line);
+
+  /* ---- code: a detail view, inked ----------------------------------
+     Two hues only (construction cyan, pencil sand) plus the tonal ramp,
+     so a code block reads as part of the drawing. MAGENTA IS ABSENT BY
+     RULE — it means "the part under discussion" and nothing else. */
+  --chroma-base00: transparent;
+  --chroma-base01: var(--dw-t3);
+  --chroma-base02: var(--dw-cons-dim);
+  --chroma-base03: #7b8494;
+  --chroma-base04: #6c7686;
+  --chroma-base05: #22303d;
+  --chroma-base06: #16202b;
+  --chroma-base07: #0d141b;
+  --chroma-base08: #9a5a2b;
+  --chroma-base09: #7a6a3e;
+  --chroma-base0A: #7a6a3e;
+  --chroma-base0B: #55613f;
+  --chroma-base0C: #26647f;
+  --chroma-base0D: #1f5c78;
+  --chroma-base0E: #4a4f7a;
+  --chroma-base0F: #7b5a3a;
+
+  /* ---- manual conventions ------------------------------------------
+     Service manuals rank advisories: NOTE < CAUTION < WARNING. The five
+     GitHub alert types already in the content map onto that ladder. */
+  --alert-note: var(--dw-t2);
+  --alert-tip: var(--dw-t2);
+  --alert-important: var(--dw-t2);
+  --alert-warning: var(--dw-t3);
+  --alert-caution: var(--dw-t3);
+  --alert-search: var(--dw-t2);
+  --alert-assignment: var(--dw-t2);
+  --alert-lab: var(--dw-t2);
+  --alert-recap: var(--dw-t2);
+
+  --alert-rule-note: var(--dw-cons);
+  --alert-rule-tip: var(--dw-cons);
+  --alert-rule-important: var(--dw-line-2);
+  --alert-rule-warning: #a86a12;
+  --alert-rule-caution: var(--dw-mark);
+
+  --cover-img-height: 32svh;
+  --section-item-cover-img-height: 24svh;
+  --site-header-height: 60px;
+
+  /* ---- pagefind ------------------------------------------------------
+     Search is the practitioner's primary entry path, so it is themed as a
+     first-class surface rather than left on the component's own defaults.
+     Its stylesheet is loaded BEFORE this one (see the layouts) because it
+     ships :root defaults that would otherwise win on later-wins. */
+  --pf-background: var(--dw-paper);
+  --pf-text: var(--dw-line);
+  --pf-text-muted: var(--dw-line-3);
+  --pf-hover: var(--dw-t3);
+  --pf-text-secondary: var(--dw-line-2);
+  --pf-modal-backdrop: #12181fa6;
+  --pf-border: var(--dw-hair);
+  --pf-border-focus: var(--dw-mark);
+  --pf-mark: var(--dw-mark);
+  --pf-skeleton: var(--dw-t3);
+  /* pagefind's shimmer reads the shine colour separately; leaving it
+     undefined kept the component's own near-white default, which glared
+     against the ink ground while results were loading */
+  --pf-skeleton-shine: var(--dw-t5);
+
+  /* drawings are ruled, not rounded — and the search box is part of the
+     drawing's chrome, not a floating widget */
+  --pf-border-radius: 0px;
+  --pf-font: var(--font-sans);
+  --pf-input-font-size: 0.95rem;
+  --pf-input-height: 34px;
+  --pf-result-title-font-size: 1.02rem;
+  --pf-result-excerpt-font-size: 0.88rem;
+  --pf-outline-focus: var(--dw-mark);
+  --pf-outline-width: 2px;
+  --pf-outline-offset: 3px;
+  --pf-shadow-sm: 0 2px 6px -2px #00000038;
+  --pf-shadow-md: 0 10px 24px -10px #00000059;
+  --pf-shadow-lg: 0 24px 60px -20px #0000006e;
+  --pf-scroll-shadow: var(--dw-t3);
+  --pf-error-bg: var(--dw-t2);
+  --pf-error-border: var(--alert-rule-caution);
+  --pf-error-text: var(--dw-line);
+  --pf-error-text-secondary: var(--dw-line-2);
+
+  color-scheme: light;
+}
+
+/* =====================================================================
+   DARK — the negative. White line on ink stock; the drawing reversed,
+   as a diazo negative or a light table reads it. This is the primary
+   scheme: the recorded use scene is a reader at a terminal at night.
+   ===================================================================== */
+
+:root[data-color="dark"] {
+  --dw-paper: #0b1016;
+  --dw-paper-2: #101823;
+  --dw-paper-3: #16202d;
+  --dw-line: #dfe6ef;
+  --dw-line-2: #97a3b4;
+  /* 5.31:1 on the ink ground; the previous #6b7787 was 4.19:1. */
+  --dw-line-3: #7c8899;
+  --dw-hair: #26313f;
+  --dw-mark: #ff3d8e;
+  --dw-mark-dim: #ff3d8e26;
+  --dw-cons: #5fb0d0;
+  --dw-cons-dim: #5fb0d033;
+
+  --dw-t1: #ffffff08;
+  --dw-t2: #ffffff0f;
+  --dw-t3: #ffffff1a;
+  --dw-t5: #ffffff33;
+
+  --box-shadow: 0 18px 44px -18px #00000099, 0 2px 6px -2px #0000005c;
+  --model-box-shadow: 0 24px 64px -20px #000000a6;
+  --model-background: var(--dw-paper-2);
+
+  --chroma-base00: transparent;
+  --chroma-base01: var(--dw-t3);
+  --chroma-base02: var(--dw-cons-dim);
+  --chroma-base03: #6b7787;
+  --chroma-base04: #7d8899;
+  --chroma-base05: #c7d1de;
+  --chroma-base06: #dfe6ef;
+  --chroma-base07: #f2f6fa;
+  --chroma-base08: #d99a6c;
+  --chroma-base09: #c3b184;
+  --chroma-base0A: #c3b184;
+  --chroma-base0B: #9db08a;
+  --chroma-base0C: #5fb0d0;
+  --chroma-base0D: #7cc3dd;
+  --chroma-base0E: #9aa0d8;
+  --chroma-base0F: #c09a78;
+
+  --alert-rule-warning: #d9a441;
+
+  --pf-modal-backdrop: #04070ad9;
+
+  color-scheme: dark;
+}
+
+@view-transition {
+  navigation: auto;
+}
+
+/* From Large Tablet */
+@media (min-width: 1024px) {
+  :root {
+    --padding: 16px;
+    --padding_d2: 8px;
+    --padding_x2: 32px;
+    --cover-img-height: 40svh;
+    --section-item-cover-img-height: 28svh;
+    --site-header-height: 68px;
+  }
+}

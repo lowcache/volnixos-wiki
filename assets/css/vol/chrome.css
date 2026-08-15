@@ -1,0 +1,486 @@
+/* =====================================================================
+   CHROME — header, sidebars, footer.
+
+   E25DX's own header/footer/sidebar/layout CSS is deliberately NOT
+   loaded (see layouts/single.html and layouts/home.html): the shell is
+   rebuilt here in the drawing's grammar rather than restyled on top of
+   the theme's, which would have meant fighting its specificity on every
+   rule. The ids and classes the theme's JavaScript queries are kept
+   exactly — #left-sidebar, #right-sidebar, #article-nav, .btn, .open,
+   .model-open, #off-canvas-model — so off-canvas.js and
+   table-of-contents.js keep working untouched.
+   ===================================================================== */
+
+/* ---- header: the sheet's top edge ---------------------------------- */
+
+#site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--dw-s4);
+  height: var(--site-header-height);
+  padding-inline: var(--dw-s4);
+  background: var(--dw-paper);
+  /* a drawing border is a double rule, not a shadow */
+  box-shadow:
+    inset 0 -3px 0 -2px var(--dw-hair),
+    inset 0 -1px 0 0 var(--dw-line-3);
+}
+
+#site-header-logo > a {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-s3);
+  text-decoration: none;
+}
+
+.dw-mark {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: miter;
+  overflow: visible;
+}
+.dw-mark__axis {
+  stroke: var(--dw-cons);
+  stroke-width: 0.75;
+  stroke-dasharray: 2 3;
+}
+/* volatile is notated by a broken line here and by hatch on the cover —
+   never by magenta, which means "the part under discussion" and nothing
+   else. The mark must not teach a second meaning on every page. */
+.dw-mark__plate--volatile {
+  stroke-dasharray: 3 2.5;
+  opacity: 0.75;
+}
+
+.dw-wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+.dw-wordmark__name {
+  font-family: var(--font-cond);
+  font-size: 1.28rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.dw-wordmark__sub {
+  font-family: var(--font-cond);
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.17em;
+  white-space: nowrap;
+  color: var(--dw-line-3);
+}
+
+/* On a phone the header has three actions to seat and the subtitle wrapped
+   to two lines, growing the bar and crushing the search box. The mark plus
+   the name carry the identity on their own at this width. */
+@media (max-width: 519px) {
+  .dw-wordmark__sub { display: none; }
+  #site-header { gap: var(--dw-s2); padding-inline: var(--dw-s3); }
+  .dw-wordmark__name { font-size: 1.12rem; }
+}
+
+/* nav: drawer tabs into the drawing set */
+#site-header-menu {
+  display: none;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+#site-header-menu > a {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  gap: var(--dw-s2);
+  padding: var(--dw-s2) var(--dw-s3);
+  font-family: var(--font-cond);
+  font-size: 0.94rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  color: var(--dw-line-2);
+  border-bottom: var(--dw-lw-med) solid transparent;
+  transition: color 0.15s var(--dw-ease), border-color 0.15s var(--dw-ease);
+}
+#site-header-menu > a:hover {
+  color: var(--dw-line);
+  border-bottom-color: var(--dw-line-3);
+}
+#site-header-menu > a.active {
+  color: var(--dw-line);
+  border-bottom-color: var(--dw-mark);
+}
+.dw-nav__ico {
+  display: flex;
+  opacity: 0.8;
+}
+.dw-nav__ico svg { display: block; }
+/* the sheet number is shown only where it tells you something: the
+   sheet you are currently inside */
+.dw-nav__sheet {
+  display: none;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+  color: var(--dw-mark);
+}
+#site-header-menu > a.active .dw-nav__sheet { display: inline; }
+
+#site-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-s2);
+}
+#site-header-actions a,
+#site-header-actions button {
+  display: flex;
+  align-items: center;
+  color: var(--dw-line-2);
+}
+#repo-main {
+  padding: var(--dw-s1);
+  border: var(--dw-lw-thin) solid transparent;
+}
+#repo-main:hover {
+  color: var(--dw-line);
+  border-color: var(--dw-hair);
+}
+#repo-main svg { display: block; fill: currentColor; }
+
+/* ---- left sidebar: the drawing-set index --------------------------- */
+
+#left-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 60;
+  width: min(86vw, 320px);
+  display: flex;
+  flex-direction: column;
+  background: var(--dw-paper);
+  border-right: var(--dw-lw-thin) solid var(--dw-hair);
+  transform: translateX(-101%);
+  transition: transform 0.28s var(--dw-ease);
+  overscroll-behavior: contain;
+}
+#left-sidebar.open { transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  #left-sidebar { transition: none; }
+}
+
+#left-sidebar > div {
+  padding: var(--dw-s3);
+  border-bottom: var(--dw-lw-thin) solid var(--dw-hair);
+}
+#left-sidebar .site-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-s3);
+  padding: var(--dw-s4);
+  text-decoration: none;
+  border-bottom: var(--dw-lw-thin) solid var(--dw-hair);
+}
+
+#left-sidebar > nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--dw-s4) 0 var(--dw-s7);
+}
+
+#left-sidebar details {
+  border-bottom: var(--dw-lw-hair) solid var(--dw-hair);
+}
+#left-sidebar summary {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-s2);
+  padding: var(--dw-s2) var(--dw-s4);
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-cond);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--dw-line-3);
+}
+#left-sidebar summary::-webkit-details-marker { display: none; }
+#left-sidebar summary::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-right: var(--dw-lw-thin) solid currentColor;
+  border-bottom: var(--dw-lw-thin) solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.18s var(--dw-ease);
+}
+#left-sidebar details[open] summary::before { transform: rotate(45deg); }
+#left-sidebar summary a { text-decoration: none; }
+#left-sidebar summary:hover { color: var(--dw-line); }
+
+#left-sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--dw-s3);
+}
+#left-sidebar ul li a {
+  display: block;
+  position: relative;
+  padding: var(--dw-s2) var(--dw-s4) var(--dw-s2) var(--dw-s6);
+  font-size: 0.95rem;
+  color: var(--dw-line-2);
+  text-decoration: none;
+  border-left: var(--dw-lw-thin) solid var(--dw-hair);
+  margin-left: var(--dw-s4);
+}
+#left-sidebar ul li a:hover {
+  color: var(--dw-line);
+  background: var(--dw-t1);
+}
+/* current sheet: a filled balloon in the margin — a drawn mark, so the
+   state survives monochrome and colour-blindness */
+#left-sidebar ul li a.active {
+  color: var(--dw-line);
+  border-left-color: var(--dw-mark);
+  background: var(--dw-mark-dim);
+}
+#left-sidebar ul li a.active::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  margin-top: -4.5px;
+  background: var(--dw-mark);
+  border-radius: 50%;
+}
+
+/* ---- right sidebar: contents of this sheet -------------------------- */
+
+#right-sidebar {
+  position: fixed;
+  inset: 0 0 0 auto;
+  z-index: 60;
+  width: min(86vw, 320px);
+  display: flex;
+  flex-direction: column;
+  background: var(--dw-paper);
+  border-left: var(--dw-lw-thin) solid var(--dw-hair);
+  transform: translateX(101%);
+  transition: transform 0.28s var(--dw-ease);
+  overscroll-behavior: contain;
+}
+#right-sidebar.open { transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  #right-sidebar { transition: none; }
+}
+
+#right-sidebar > div {
+  padding: var(--dw-s3);
+  border-bottom: var(--dw-lw-thin) solid var(--dw-hair);
+}
+#right-sidebar > header {
+  padding: var(--dw-s4) var(--dw-s4) var(--dw-s2);
+}
+#right-sidebar > header h3 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--dw-line-3);
+}
+#right-sidebar > footer {
+  padding: var(--dw-s3) var(--dw-s4);
+  border-top: var(--dw-lw-thin) solid var(--dw-hair);
+}
+#back-to-top {
+  font-family: var(--font-cond);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--dw-line-3);
+  text-decoration: none;
+}
+#back-to-top:hover { color: var(--dw-mark); }
+
+#TableOfContents {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--dw-s4) var(--dw-s6);
+}
+#TableOfContents ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+#TableOfContents ul ul { padding-left: var(--dw-s3); }
+#TableOfContents li { margin: 0; }
+#TableOfContents a {
+  display: block;
+  padding: 5px 0 5px var(--dw-s3);
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: var(--dw-line-3);
+  text-decoration: none;
+  border-left: var(--dw-lw-thin) solid var(--dw-hair);
+  transition: color 0.15s var(--dw-ease), border-color 0.15s var(--dw-ease);
+}
+#TableOfContents a:hover { color: var(--dw-line); }
+#TableOfContents a.active {
+  color: var(--dw-line);
+  border-left-color: var(--dw-mark);
+  border-left-width: var(--dw-lw-med);
+}
+
+/* ---- off-canvas scrim ---------------------------------------------- */
+
+#off-canvas-model {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--pf-modal-backdrop);
+  backdrop-filter: blur(var(--blur));
+}
+body.model-open { overflow: hidden; }
+
+/* ---- in-article nav buttons (small screens) ------------------------- */
+
+#article-nav {
+  display: flex;
+  gap: var(--dw-s2);
+  margin-bottom: var(--dw-s5);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dw-s2);
+  padding: 7px var(--dw-s3);
+  font-family: var(--font-cond);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dw-line-2);
+  background: transparent;
+  border: var(--dw-lw-thin) solid var(--dw-hair);
+  border-radius: 0;
+  cursor: pointer;
+  transition: border-color 0.15s var(--dw-ease), color 0.15s var(--dw-ease);
+}
+.btn:hover {
+  color: var(--dw-line);
+  border-color: var(--dw-line-3);
+}
+.btn svg { display: block; }
+#article-nav > button:last-child { margin-left: auto; }
+
+/* ---- site footer: the sheet's bottom edge --------------------------- */
+
+.dw-footrule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dw-s2) var(--dw-s5);
+  padding: var(--dw-s5) var(--dw-s4);
+  margin-top: var(--dw-s6);
+  border-top: var(--dw-lw-thin) solid var(--dw-line-3);
+  box-shadow: inset 0 3px 0 -2px var(--dw-hair);
+  font-family: var(--font-cond);
+  font-size: 0.84rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--dw-line-3);
+}
+.dw-footrule a { color: var(--dw-line-2); }
+.dw-footrule a:hover { color: var(--dw-line); }
+
+/* =====================================================================
+   LAYOUT — from Large Tablet up the sidebars become permanent columns
+   ===================================================================== */
+
+@media (min-width: 1024px) {
+  #site-header-menu { display: flex; }
+  #article-nav { display: none; }
+
+  /* The article + contents-rail grid belongs ONLY to sheet pages. The cover
+     sheet has no right sidebar, so an unscoped `main` rule dealt its
+     masthead, drawing, notes and index into these two columns and squeezed
+     the assembly into the 264px rail, overflowing the page. Both classes are
+     set by layouts/single.html; the cover carries neither. */
+  body:is(.has-left-sidebar, .no-left-sidebar) main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 264px;
+    gap: var(--dw-s7);
+    align-items: start;
+  }
+
+  #right-sidebar {
+    position: sticky;
+    inset: auto;
+    top: calc(var(--site-header-height) + var(--dw-s5));
+    z-index: 1;
+    width: auto;
+    max-height: calc(100svh - var(--site-header-height) - var(--dw-s7));
+    transform: none;
+    background: transparent;
+    border-left: var(--dw-lw-thin) solid var(--dw-hair);
+  }
+  #right-sidebar > div,
+  #right-sidebar > footer { display: none; }
+  #right-sidebar > header { padding-top: 0; }
+
+  body.no-left-sidebar main,
+  .dw-cover {
+    max-width: var(--dw-sheet-max);
+    margin-inline: auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  body.has-left-sidebar #left-sidebar {
+    position: fixed;
+    transform: none;
+    width: 300px;
+    border-right: var(--dw-lw-thin) solid var(--dw-hair);
+  }
+  body.has-left-sidebar #left-sidebar > div { display: none; }
+  body.has-left-sidebar #content-wrapper { margin-left: 300px; }
+
+  /* the sidebar's lockup duplicates the header's once the sidebar is a
+     permanent column — the header keeps it, and the sidebar continues the
+     header's band and double rule across its own width instead, so the two
+     do not collide in the top-left corner */
+  body.has-left-sidebar #left-sidebar .site-logo { display: none; }
+  body.has-left-sidebar #left-sidebar::before {
+    content: "";
+    flex: none;
+    height: var(--site-header-height);
+    box-shadow:
+      inset 0 -3px 0 -2px var(--dw-hair),
+      inset 0 -1px 0 0 var(--dw-line-3);
+  }
+  body.has-left-sidebar #left-sidebar > nav { padding-top: var(--dw-s4); }
+
+  /* the sheet column had no ceiling: on a wide monitor its rules, tables and
+     detail views ran the full width, past any sane measure */
+  body.has-left-sidebar main {
+    max-width: calc(var(--dw-sheet-max) - 120px);
+    margin-inline: auto;
+  }
+}

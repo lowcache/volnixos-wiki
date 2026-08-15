@@ -1,0 +1,55 @@
+{{- /*
+  Project override of E25DX's main-content/footer.html.
+
+  The stock partial derives previous/next from data/<lang>/<section>/sidebar.yaml,
+  building hrefs as `title | urlize`. Those files exist here only as the presence
+  flag that switches the left sidebar on, and carry `pages: []`, so the stock
+  version renders no adjacent-sheet navigation at all on every page in the site.
+
+  This walks the content tree instead — same source of truth as the left-sidebar
+  override — so adjacency always matches what is actually published, and a link
+  here can never 404 against check-links.sh.
+*/ -}}
+
+{{- $cur := . -}}
+{{- $siblings := $cur.CurrentSection.RegularPages.ByWeight -}}
+{{- $prev := false -}}{{- $next := false -}}
+{{- $seen := false -}}
+{{- range $siblings -}}
+  {{- if $seen -}}
+    {{- if not $next }}{{ $next = . }}{{ end -}}
+  {{- else if eq .RelPermalink $cur.RelPermalink -}}
+    {{- $seen = true -}}
+  {{- else -}}
+    {{- $prev = . -}}
+  {{- end -}}
+{{- end -}}
+
+<footer id="article-footer" class="dw-sheetfoot">
+  {{- /* .Lastmod is the zero time when a page has no date front matter and
+      git info is unavailable (a shallow CI clone). Printing it renders
+      "0001-01-01" as though it were a real revision. */ -}}
+  {{ if not .Lastmod.IsZero }}
+  <div class="dw-sheetfoot__rev">
+    {{- $lastMod := .Lastmod.Format "2006-01-02" }}
+    <span class="dw-tb__key">Rev</span>
+    <time datetime="{{ $lastMod }}" class="dw-fig">{{ $lastMod }}</time>
+  </div>
+  {{ end }}
+
+  <nav class="dw-adjacent" aria-label="Adjacent sheets">
+    {{ if $prev }}
+    <a class="dw-adjacent__link dw-adjacent__link--prev" href="{{ $prev.RelPermalink }}" rel="prev">
+      <span class="dw-adjacent__dir">Previous sheet</span>
+      <span class="dw-adjacent__title">{{ $prev.LinkTitle }}</span>
+    </a>
+    {{ else }}<span class="dw-adjacent__spacer" aria-hidden="true"></span>{{ end }}
+
+    {{ if $next }}
+    <a class="dw-adjacent__link dw-adjacent__link--next" href="{{ $next.RelPermalink }}" rel="next">
+      <span class="dw-adjacent__dir">Next sheet</span>
+      <span class="dw-adjacent__title">{{ $next.LinkTitle }}</span>
+    </a>
+    {{ else }}<span class="dw-adjacent__spacer" aria-hidden="true"></span>{{ end }}
+  </nav>
+</footer>
