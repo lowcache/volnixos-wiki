@@ -1,48 +1,51 @@
-# Volatile NixOS wiki — build and deploy.
+# Volatile NixOS wiki — Hugo + E25DX, deployed to Cloudflare Workers.
+# Hugo runs from this repo's flake (no global install); mirrors the blog's flow.
 #
-# These targets used to live in ~/.nix-config/Makefile as docs-serve/docs-build/
-# docs-deploy, back when the pages were a symlink into this directory. They moved
-# here with the repo. The old MKDOCS variable evaluated `builtins.getFlake` on the
-# config root, which copied the whole repo into the store and failed on the
-# AF_UNIX socket sitting in it:
-#   error: file '/home/lowcache/.nix-config/tailscale.sock' has an unsupported type
-# Building from this repo sidesteps that entirely.
+# The Worker name and the asset directory live in ./wrangler.toml, not here —
+# `wrangler deploy` reads them. SITE is only used for the post-deploy smoke test.
+SITE ?= https://wiki.infernalcode.com
+# '#' starts a Make comment, so the flake ref is assembled with an escaped hash.
+HASH := \#
+# Resolved through ./flake.nix, not `nixpkgs#hugo`, which follows the local
+# registry and drifts between Hugo releases — and a drift changes rendered
+# output. `go` comes along because the theme is a Hugo Module (no submodules)
+# and module resolution needs it; `pagefind` builds the search index.
+HUGO     = nix shell .$(HASH)hugo .$(HASH)go --command hugo
+BUILD    = nix shell .$(HASH)hugo .$(HASH)go .$(HASH)pagefind --command ./build.sh
+WRANGLER = nix shell .$(HASH)wrangler --command wrangler
 
-VENV        ?= .venv
-PY          ?= python3
-MKDOCS      := $(VENV)/bin/mkdocs
-DOCS_REMOTE ?= pgs.sh
-DOCS_PROJECT?= wiki
+.PHONY: help serve build deploy verify clean mod-update
 
-.PHONY: help venv serve build deploy deploy-cf clean
-
-## :help: ...............: Show this help
 help:
-	@sed -n 's/^## //p' $(MAKEFILE_LIST)
+	@echo "make serve       Live preview incl. drafts (http://localhost:1313)"
+	@echo "make build       Production build to ./public (runs ./build.sh)"
+	@echo "make deploy      Build, upload ./public to Cloudflare Workers, then verify"
+	@echo "make verify      Smoke-test the live site ($(SITE))"
+	@echo "make mod-update  Update the E25DX theme module"
+	@echo "make clean       Remove build output"
 
-## :venv: ...............: Install the pinned mkdocs toolchain into .venv
-venv: $(MKDOCS)
-$(MKDOCS):
-	$(PY) -m venv $(VENV)
-	$(VENV)/bin/pip install --quiet --upgrade pip
-	$(VENV)/bin/pip install --quiet -r docs/requirements.txt
+serve:
+	$(HUGO) server -D
 
-## :serve: ..............: Live-preview at 127.0.0.1:8000
-serve: venv
-	$(MKDOCS) serve
+build:
+	$(BUILD)
 
-## :build: ..............: Build the static site strictly to ./site
-build: venv
-	$(MKDOCS) build --strict
-
-## :deploy-cf: ..........: Build, then publish to Cloudflare (wrangler.toml)
-deploy-cf: build
-	npx wrangler deploy
-
-## :deploy: .............: Build, then rsync ./site to the pgs.sh host
+# The normal deploy is `git push` -> Workers Builds runs ./build.sh. This local
+# path is the rescue route: same script, flake-pinned toolchain, uploaded
+# directly. Use it when a build is stuck or a known-good tree must ship now.
 deploy: build
-	rsync --delete -rv ./site/ $(DOCS_REMOTE):/$(DOCS_PROJECT)
+	$(WRANGLER) deploy
+	@$(MAKE) --no-print-directory verify
 
-## :clean: ..............: Remove the built site
+verify:
+	@code=$$(curl -s -o /dev/null -w '%{http_code}' $(SITE)/); \
+	 echo "$(SITE)/ -> $$code"; \
+	 [ "$$code" = "200" ] || { echo "site did not return 200" >&2; exit 1; }
+
+# The theme is pinned in go.mod by commit. This is the deliberate way to move it.
+mod-update:
+	$(HUGO) mod get -u github.com/dumindu/E25DX
+	$(HUGO) mod tidy
+
 clean:
-	rm -rf site
+	rm -rf public resources .hugo_build.lock

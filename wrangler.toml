@@ -1,15 +1,24 @@
-# Cloudflare Workers Static Assets deployment for the MkDocs wiki.
+# Cloudflare Workers Static Assets deployment for the wiki.
 #
-# Without this file, `npx wrangler deploy` falls back to auto-configuration and
-# invents a build command that does not exist, failing the deploy after an
-# otherwise successful build.
+# There is no Worker script: this is a static site, so `main` is omitted and
+# Cloudflare serves ./public directly. Static asset requests are free and
+# unlimited, and do not count against the Workers request quota.
 #
-# No Worker script: `main` is omitted so Cloudflare serves ./site directly.
-# mkdocs copies docs/_redirects into site/_redirects, which is the assets root,
-# so the existing Netlify-syntax redirects keep working.
+# Output moved from ./site to ./public when the wiki went from MkDocs to Hugo —
+# Hugo's default publish dir. Pointing this at the old ./site would upload
+# nothing and still report success.
 name = "volnixos-wiki"
 compatibility_date = "2026-08-04"
 
+# There is deliberately NO [build] section here.
+#
+# Workers Builds does not honor Custom Builds from the Wrangler configuration
+# file — it runs the Build command set in the dashboard instead. ./build.sh is
+# the single definition; the dashboard Build command and `make build` both call
+# it. build.sh fails if public/index.html, public/sitemap.xml or the pagefind
+# index is missing, so an empty upload cannot pass silently.
+
 [assets]
-directory = "./site"
+directory = "./public"
+html_handling = "auto-trailing-slash"
 not_found_handling = "404-page"

@@ -1,0 +1,86 @@
+baseURL = "https://wiki.infernalcode.com/"
+locale = "en-US"
+defaultContentLanguage = "en"
+
+# NOTE: there is deliberately no top-level `theme =` here. See the
+# ignoreConfig comment on the module import below.
+title = "Volatile NixOS Configuration"
+enableRobotsTXT = true
+enableInlineShortcodes = true
+enableEmoji = true
+enableGitInfo = false
+
+# The wiki has no taxonomies. E25DX disables these in its own reference config;
+# without it Hugo emits empty /tags/ and /categories/ pages.
+disableKinds = ["taxonomy", "term"]
+
+[minify]
+  disableXML = true
+  minifyOutput = true
+
+# The theme is a Hugo Module, resolved through go.mod — NOT a git submodule.
+# `go` must be on PATH for module resolution (see flake.nix, Makefile).
+[module]
+  [[module.imports]]
+    path = "github.com/dumindu/E25DX"
+    # ignoreConfig is REQUIRED, not tidiness.
+    #
+    # E25DX ships a hugo.yaml at its module root that doubles as its reference
+    # site config, and it contains `theme: E25DX`. Hugo merges an imported
+    # module's config by default, then tries to resolve that as a LOCAL theme:
+    #   module "E25DX" not found in ".../themes/E25DX"
+    # which is unfixable from our side because the name has no module path.
+    # ignoreConfig stops Hugo reading that file at all. Everything the theme
+    # actually needs from it — markup/goldmark settings, params defaults — is
+    # declared explicitly in this file instead. Its layouts/assets/i18n/data
+    # still mount, because those are Hugo's default mounts and do not come from
+    # the ignored config.
+    ignoreConfig = true
+
+[languages]
+  [languages.en]
+    weight = 1
+    label = "English"
+    locale = "en-US"
+    contentDir = "content/en"
+    title = "Volatile NixOS Configuration"
+    [languages.en.params]
+      description = "A stateless, flake-driven NixOS workstation — ephemeral tmpfs root, CachyOS kernel, Lanzaboote Secure Boot, sops-nix secrets, microvm.nix gateways, a niri + Noctalia v5 Wayland desktop, and a Nix-on-Droid phone tier."
+
+[markup]
+  [markup.highlight]
+    # noClasses=false emits CSS classes instead of inline styles, so the theme's
+    # (and our) stylesheet controls code colour rather than Chroma hardcoding it.
+    noClasses = false
+  [markup.goldmark.renderer]
+    # Required: the home page and the phone index use raw <div class="vol-*">
+    # blocks carried over from the MkDocs build.
+    unsafe = true
+  [markup.goldmark.parser.attribute]
+    block = true
+    title = true
+  [markup.tableOfContents]
+    pre = '<nav id="TableOfContents" aria-label="Table of Contents">'
+    post = "</nav>"
+    startLevel = 2
+    endLevel = 3
+
+[params]
+  enableOGXSEO = false
+  # Search is a POST-BUILD step: the theme renders the UI, but the index is only
+  # produced by running `pagefind --site public` after Hugo. build.sh does that.
+  enablePageFind = true
+
+  [params.project]
+    startYear = 2026
+    presentYear = 2026
+    [params.project.repo]
+      # The wiki's own repo — this is what the edit/source links resolve against.
+      main = "lowcache/volnixos-wiki"
+    [params.project.themeColor]
+      light = "#ffffff"
+      dark = "#101010"
+
+  [params.author]
+    name = "lowcache"
+    url = "https://github.com/lowcache"
