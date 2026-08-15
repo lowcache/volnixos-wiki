@@ -49,4 +49,12 @@ fi
 [ -f public/sitemap.xml ]  || { echo "build produced no public/sitemap.xml" >&2; exit 1; }
 [ -d public/pagefind ]     || { echo "build produced no search index" >&2; exit 1; }
 
+# Broken internal links are a publish blocker, not a warning.
+#
+# `mkdocs build --strict` used to fail on these; Hugo does not, and the port kept
+# plain markdown links (rather than ref/relref) to preserve URLs. Without this a
+# typo'd link ships a 404 on a green build — and unattended, once push-to-deploy
+# is connected. Runs against public/, so it checks exactly what gets uploaded.
+./check-links.sh public
+
 echo "built $(find public -name '*.html' | wc -l) html files"
