@@ -23,13 +23,13 @@ Noctalia serves as the hub for the desktop's visual and interactive elements:
 - **Media & Brightness:** Hardware control routing via `noctalia msg` IPC commands.
 - **Wallpaper Picker:** Native desktop wallpaper integration.
 
-### Desktop Bar Layout
+### Desktop & Bar Layout w/ plugins
 
 The panel layout uses a continuous visual frame composed of two segments meeting at a right
 angle:
-- **Top Bar:** Full width, containing a centered clock, tray, network, volume, battery, and control-center widgets.
-- **Left Bar:** Full height, housing the launcher, workspaces, and system monitors (CPU/GPU usage and temperatures).
-
+- **Bottom Bar:** Full width, containing system monitors (cpu/cpu temp, gpu/gpu temp, RAM, SWAP, /persist, and Download graph) an off-centered clock & weather, tray, network, volume, battery, bluetooth and session widgets.
+- **Left Bar:** Full height, housing an audio visualizer, workspaces, and the chosen plugins (oversized claude-companion pulse, calculator, clipboard, screenshot, prettier bound keys display, nix monitor, notes, and llama manager).
+- **Desktop:** An Audio visualizer widget spans the length of the left bar at the edge that gives the effect of audio bars extending from the bar onto the desktop for when a window isn't at full screen.
 
 > [!NOTE] Claude Code companion plugin (external)
 >
