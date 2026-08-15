@@ -87,6 +87,12 @@ theme:
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
+    # Renders the "edit this page" pencil. Material only shows it when this
+    # feature is on — `edit_uri` alone does nothing, which is why the setting sat
+    # inert for so long. Only enabled now that edit_uri resolves to a real repo
+    # (see the repo_url note above); turning it on while docs/ was a symlink in
+    # the config repo would have shipped a 404 on every page.
+    - content.action.edit
 
 extra_css:
   - stylesheets/extra.css
