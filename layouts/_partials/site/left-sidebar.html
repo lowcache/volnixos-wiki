@@ -1,0 +1,49 @@
+{{- /*
+  Project override of E25DX's left-sidebar.html.
+
+  The stock partial builds the nav from data/<lang>/<section>/sidebar.yaml and
+  derives each href as `title | urlize`. That couples the DISPLAY TITLE to the
+  FILE SLUG: "Boot & Secure Boot" would urlize to boot-secure-boot and 404
+  against boot.md, so every nice title had to be flattened to match its
+  filename, and adding a page meant editing a data file too or it silently
+  vanished from the nav.
+
+  This version walks the content tree instead. Titles come from front matter,
+  order from `weight`, and links from .RelPermalink — so a page cannot be in the
+  nav and 404, or exist and be missing from the nav. Markup, classes and ids are
+  kept identical to the theme's so its CSS still applies.
+*/ -}}
+<aside id="left-sidebar">
+	<div>
+		<button class="btn">{{ partial "icon.html" "close" }} {{ i18n "close" }}</button>
+	</div>
+
+	<a href="{{ site.Home.Permalink }}" class="site-logo">
+		<img height="52px" src="{{ "assets/logo.png" | absURL }}" alt="Site Logo">
+	</a>
+
+	{{- $cur := page -}}
+	<nav aria-label="Site pages">
+		{{- range $section := site.Sections.ByWeight }}
+			{{- $pages := $section.RegularPages.ByWeight }}
+			{{- if $pages }}
+				{{- $inSection := eq $cur.Section $section.Section }}
+		<details {{ if $inSection }}open{{ end }}>
+			<summary>
+				<a href="{{ $section.RelPermalink }}">{{ $section.LinkTitle }}</a>
+			</summary>
+			<ul>
+				{{- range $pages }}
+				<li>
+					<a href="{{ .RelPermalink }}"
+						{{- if eq .RelPermalink $cur.RelPermalink }} class="active" aria-current="page"{{ end }}>
+						{{ .LinkTitle }}
+					</a>
+				</li>
+				{{- end }}
+			</ul>
+		</details>
+			{{- end }}
+		{{- end }}
+	</nav>
+</aside>

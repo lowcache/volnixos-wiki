@@ -84,3 +84,57 @@ disableKinds = ["taxonomy", "term"]
   [params.author]
     name = "lowcache"
     url = "https://github.com/lowcache"
+
+# Header nav. The left sidebar REQUIRES a menus.main entry whose
+# identifier equals the section name — left-sidebar.html looks up
+# `where site.Menus.main "Identifier" page.Section` and indexes [0].
+[menus]
+  [[menus.main]]
+    identifier = "architecture"
+    name = "Architecture"
+    url = "/architecture/"
+    weight = 10
+    [menus.main.params]
+      icon = "science"
+  [[menus.main]]
+    identifier = "networking"
+    name = "Networking"
+    url = "/networking/"
+    weight = 20
+    [menus.main.params]
+      icon = "side_navigation"
+  [[menus.main]]
+    identifier = "system"
+    name = "System"
+    url = "/system/"
+    weight = 30
+    [menus.main.params]
+      icon = "rocket_launch"
+  [[menus.main]]
+    identifier = "phone"
+    name = "Phone"
+    url = "/phone/"
+    weight = 40
+    [menus.main.params]
+      icon = "news"
+  [[menus.main]]
+    identifier = "desktop"
+    name = "Desktop"
+    url = "/desktop/"
+    weight = 50
+    [menus.main.params]
+      icon = "palette"
+  [[menus.main]]
+    identifier = "reference"
+    name = "Reference"
+    url = "/reference/"
+    weight = 60
+    [menus.main.params]
+      icon = "menu_book"
+  [[menus.main]]
+    identifier = "tooling"
+    name = "Tooling"
+    url = "/tooling/"
+    weight = 70
+    [menus.main.params]
+      icon = "list_alt"
