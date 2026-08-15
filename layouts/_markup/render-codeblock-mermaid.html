@@ -1,0 +1,42 @@
+{{- /*
+  Mermaid support. E25DX ships no third-party JS on purpose, and its generic
+  render-codeblock.html only does syntax highlighting plus title=/link= chrome —
+  a ```mermaid fence would render as highlighted source, not a diagram.
+
+  Hugo's codeblock hook lookup prefers render-codeblock-<LANG>.html over the
+  generic one, so this file intercepts mermaid fences WITHOUT forking the theme.
+  Keep the filename exactly as-is or the theme's generic hook wins again.
+
+  The loader is emitted from inside this hook, guarded by .Page.Store, rather
+  than from a head partial: that keeps the whole feature in one file with no
+  dependency on theme-internal hook names, and means pages without a diagram
+  fetch nothing. There are 7 diagrams across the wiki.
+
+  [CEILING]: mermaid is pulled from a CDN, which is the one external request on
+  a site whose theme is otherwise dependency-free. To close that, vendor
+  mermaid.esm.min.mjs into assets/ and swap the import for a resources.Get
+  pipeline. Upgrade path noted for the visual overhaul pass.
+*/ -}}
+<pre class="mermaid" aria-label="Diagram">
+  {{- .Inner | htmlEscape | safeHTML -}}
+</pre>
+
+{{- if not (.Page.Store.Get "mermaidLoaded") -}}
+  {{- .Page.Store.Set "mermaidLoaded" true -}}
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    // The theme flips colour scheme on <html data-theme>; fall back to the OS
+    // preference when the attribute is absent so the first paint is not wrong.
+    const root = document.documentElement;
+    const dark =
+      (root.dataset.theme || "").includes("dark") ||
+      (!root.dataset.theme &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: dark ? "dark" : "default",
+      securityLevel: "strict",
+       fontFamily: "inherit",
+    });
+  </script>
+{{- end -}}
