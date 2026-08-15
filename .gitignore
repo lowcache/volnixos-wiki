@@ -3,18 +3,8 @@
 /resources/
 .hugo_build.lock
 
-# MkDocs build output. docs/ + mkdocs.yml are still present during the Hugo
-# migration so the old site stays buildable and comparable; drop them, this
-# entry, and requirements.txt once the Hugo build is live.
-/site/
-
 # Wrangler local state (build cache, dev server, deploy metadata).
 /.wrangler/
-
-# Python venv from the MkDocs toolchain.
-/.venv/
-__pycache__/
-*.pyc
 
 # Direnv / editor scratch
 /.direnv/

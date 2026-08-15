@@ -30,10 +30,16 @@ hugo --minify --cleanDestinationDir
 # Search. E25DX renders the search UI but does not build an index — pagefind
 # crawls the finished HTML and writes public/pagefind/. Skipping this step is
 # silent: the box renders and every query returns nothing.
+#
+# Two sources on purpose. Locally the flake supplies pagefind (pinned, offline).
+# The Cloudflare build image does NOT ship it, so CI falls back to npx. Without
+# the fallback every Workers build fails at this line.
 if command -v pagefind >/dev/null 2>&1; then
   pagefind --site public
+elif command -v npx >/dev/null 2>&1; then
+  npx -y pagefind@1 --site public
 else
-  echo "pagefind not on PATH — search index NOT built" >&2
+  echo "no pagefind and no npx — search index cannot be built" >&2
   exit 1
 fi
 
