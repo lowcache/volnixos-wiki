@@ -5,21 +5,25 @@ site_description: >-
   niri + Noctalia v5 Wayland desktop.
 site_author: automated indigency / lowcache
 site_url: https://wiki.infernalcode.com/
-# repo_url/edit_uri must point at THIS repo (the wiki), not at volnixos.
+# These two point at DIFFERENT repos on purpose.
 #
-# The pages used to live in the config repo as a tracked *symlink* (mode 120000,
-# target /persist/home/lowcache/CodeRepo/blogs/wiki/docs), so GitHub served
-# `docs` as a symlink blob and every generated edit URL —
-# volnixos/edit/main/docs/<page>.md — 404'd. The markdown was never in that repo
-# at all, which also meant the wiki had no version control.
+# The header link is the config — that is the thing readers come here for. The
+# edit pencil has to be the wiki repo, because that is where the markdown lives.
 #
-# The wiki is now its own repo with the pages at docs/, so `edit/main/docs/`
-# resolves for real. In-page links to volnixos/blob/main/... are unaffected and
-# should stay: they point at the actual Nix source, which does live over there.
-# The config repo also stays one click away via the snowflake in extra.social.
-repo_url: https://github.com/lowcache/volnixos-wiki
-repo_name: lowcache/volnixos-wiki
-edit_uri: edit/main/docs/
+# Normally you cannot split them: edit_uri is resolved relative to repo_url. An
+# ABSOLUTE edit_uri overrides that base (urljoin semantics), which is what makes
+# this work. Verified in the built HTML, not assumed — if you ever shorten
+# edit_uri back to a relative `edit/main/docs/`, it will silently start pointing
+# at volnixos/edit/... again, which 404s.
+#
+# History: the pages used to live here as a tracked *symlink* in the config repo
+# (mode 120000 → /persist/home/lowcache/CodeRepo/blogs/wiki/docs), so GitHub
+# served `docs` as a symlink blob, no markdown was under version control, and any
+# edit URL 404'd. The wiki is its own repo now. In-page links to
+# volnixos/blob/main/... are correct and should stay — the Nix source is there.
+repo_url: https://github.com/lowcache/volnixos
+repo_name: lowcache/volnixos
+edit_uri: https://github.com/lowcache/volnixos-wiki/edit/main/docs/
 copyright: Volatile NixOS · 2026 · dev LowCache
 
 theme:
