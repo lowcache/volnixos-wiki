@@ -1,0 +1,10 @@
+# Presence flag, not content.
+#
+# E25DX's single.html only includes site/left-sidebar.html when
+# site.Data.<lang>.<section>.sidebar exists, so this file must be here or the
+# section renders with NO navigation at all. Its contents are ignored:
+# layouts/_partials/site/left-sidebar.html is overridden in this repo and
+# builds the nav from the content tree instead, which keeps titles and slugs
+# from drifting apart. Delete this file and the sidebar silently vanishes.
+- title: System
+  pages: []
