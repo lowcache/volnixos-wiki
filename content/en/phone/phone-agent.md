@@ -19,7 +19,7 @@ It provides four capabilities plus a `phone-agent` CLI for ad-hoc tool calls:
 
 > [!NOTE] Scope
 > This page documents the **laptop side** (the NixOS module declared in this repo). The phone-side
-> MCP server is built on-device with Claude Code and is out of scope here — see
+> MCP server was built on-device with and is out of scope here — see
 > [`nixos/phone-agent/README.md`](https://github.com/lowcache/volnixos/blob/main/nixos/phone-agent/README.md)
 > and the phone repo's `PHONE-ENV.md` for that half. The MCP server runs in **Termux**
 > (`com.termux`), not in [Nix-on-Droid](nix-on-droid/) — see the
