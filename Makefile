@@ -13,6 +13,13 @@ HASH := \#
 HUGO     = nix shell .$(HASH)hugo .$(HASH)go --command hugo
 BUILD    = nix shell .$(HASH)hugo .$(HASH)go .$(HASH)pagefind --command ./build.sh
 WRANGLER = nix shell .$(HASH)wrangler --command wrangler
+# Cloudflare deploy token from sops. wrangler keeps its OAuth credentials under
+# ~/.config/.wrangler, which impermanence discards on every boot (that path is
+# not in home/persist.nix), so `wrangler login` survives only until the next
+# reboot and a local deploy then fails with "non-interactive environment".
+# wrangler reads CLOUDFLARE_API_TOKEN from the env and has no --token flag, so
+# the recipe cats this into that one command rather than exporting it.
+CF_TOKEN_FILE ?= /run/secrets/cloudflare_api_token
 
 .PHONY: help serve build deploy verify clean mod-update
 
@@ -34,7 +41,10 @@ build:
 # path is the rescue route: same script, flake-pinned toolchain, uploaded
 # directly. Use it when a build is stuck or a known-good tree must ship now.
 deploy: build
-	$(WRANGLER) deploy
+	@test -r "$(CF_TOKEN_FILE)" || test -n "$$CLOUDFLARE_API_TOKEN" \
+	  || { echo "no Cloudflare token: $(CF_TOKEN_FILE) unreadable and CLOUDFLARE_API_TOKEN unset"; exit 1; }
+	@CLOUDFLARE_API_TOKEN="$$(test -r '$(CF_TOKEN_FILE)' && cat '$(CF_TOKEN_FILE)' || echo "$$CLOUDFLARE_API_TOKEN")" \
+	  $(WRANGLER) deploy
 	@$(MAKE) --no-print-directory verify
 
 verify:
