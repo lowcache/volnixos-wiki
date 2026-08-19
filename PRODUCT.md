@@ -19,7 +19,7 @@ Neither is courted at the other's expense. The site's own stated position is tha
 
 Reference documentation for the `volnixos` NixOS configuration: a stateless, flake-driven workstation whose root filesystem is a `tmpfs` destroyed on every boot, with durable state mapped explicitly through `impermanence`. The wiki explains how each subsystem works and how it is wired, so a reader can understand a mechanism well enough to reimplement it in their own configuration.
 
-Success is a reader leaving with a pattern they can apply — not a reader installing this configuration.
+Success is a reader leaving with a pattern they can apply — not a reader installing this configuration, and visiting the blog for an indepth look at how a setting got there.
 
 ## Positioning
 
