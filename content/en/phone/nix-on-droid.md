@@ -219,12 +219,26 @@ Four packages are held back from the shared layer for that reason, each with a s
 The two backported Rust packages are the deliberate exception: `rtk` and `mcp-gateway` do compile
 on-device, natively, in a few minutes each. See [backports](backports/).
 
-> [!NOTE] The measured figures need re-taking
-> `droid/README.md` carries a download/unpacked table measured 2026-08-02. Every row predates the
-> tree it describes: `droid/agents.nix` dropped the `llm-agents` set and gained the two backports on
-> 2026-08-03, and `home/common/` changed again on 2026-08-14. A laptop-side `make droid-plan` is not
-> a substitute either, since it reports against volnix's substituters rather than the phone's. The
-> number that counts comes from `make droid-plan` run on the device.
+At the current lock `make droid-plan` reports **104 derivations to build**, and the breakdown is
+the check, not the total:
+
+| Derivations | | |
+| :--- | ---: | :--- |
+| fish completions | 57 | glue |
+| Home Manager session and activation glue | 25 | glue |
+| build-time helpers (`pythoncheck.sh`, cargo vendor utils) | ~14 | glue |
+| `rtk` 0.44.2, `mcp-gateway` 3.4.0 (+ vendor trees) | 4 | the deliberate on-device Rust builds |
+| `claude-code` 2.1.140 | 1 | one npm derivation, cheap |
+
+No plain nixpkgs package appears in that list. That is the invariant; if one shows up, the phone is
+about to compile it.
+
+> [!NOTE] Derivation counts travel, byte counts do not
+> The count above comes from evaluation, so it is the same wherever you run it. `droid/README.md`
+> also carries a download/unpacked table measured 2026-08-02 — treat those as historical. Every row
+> predates the tree it describes (`droid/agents.nix` changed 2026-08-03, `home/common/` on
+> 2026-08-14), and byte figures from a laptop-side dry-run describe what volnix's store is missing
+> rather than what the phone would pull.
 
 ## Building and switching
 
