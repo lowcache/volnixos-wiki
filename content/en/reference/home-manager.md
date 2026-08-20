@@ -29,7 +29,7 @@ imports = [
 ## Common Portable Layer (`home/common/`)
 
 `home/common/` is the portable layer shared between the laptop and the phone. `home/shell.nix`
-imports it on volnix; [`droid/home.nix`](../phone/nix-on-droid/#user-layer-droidhomenix) imports
+imports it on volnix; [`droid/home.nix`](../phone/nix-on-droid/#user-layer--droidhomenix) imports
 it inside Nix-on-Droid, so both environments get the same shell and the same CLI core.
 
 | File | Contents |
