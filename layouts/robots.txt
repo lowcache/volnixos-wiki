@@ -1,0 +1,45 @@
+{{- /* Overrides E25DX's robots.txt.
+
+       Upstream ships this:
+
+           User-agent: Googlebot
+           User-agent: YandexBot
+           User-agent: baiduspider
+           User-agent: Applebot
+           Allow: /
+
+           User-agent: *
+           {{ range .Pages }}Disallow: {{ .RelPermalink }}{{ end }}
+
+       — every page enumerated as a Disallow under `*`, and because the home
+       page's RelPermalink is `/`, the list terminates in a blanket
+       `Disallow: /`. Googlebot is unaffected; it matches its own group above.
+       Nothing else is: bingbot is not on that four-name allowlist, so it falls
+       through to `*` and the entire wiki was closed to Bing — and to
+       DuckDuckGo, which is served by Bing. That is most of the non-Google
+       search traffic that exists.
+
+       Two fixes here:
+
+       1. Nothing is disallowed. robots.txt controls *crawling*, not
+          *indexing* — the same lesson written up at length in
+          volnixos-blog/layouts/robots.txt. There is nothing on this wiki I
+          want kept out of an index, so there is nothing to disallow.
+
+       2. `Sitemap:` is declared, and absolute. Upstream emits no Sitemap line
+          at all. Search Console reported every wiki URL as "No referring
+          sitemaps detected": the wiki sitemap had never been submitted to the
+          property, and robots.txt gave Google no way to autodiscover it, so
+          following internal links was the only way in. Both ends were shut at
+          the same time, which is what made the post-migration drop in
+          August 2026 so hard to climb back out of.
+
+       Cloudflare prepends its own managed block to whatever this file emits:
+       the Content-Signal policy and the AI-scraper blocklist (GPTBot, CCBot,
+       ClaudeBot, Google-Extended, Bytespider, meta-externalagent and friends).
+       Don't duplicate those here — and when auditing what crawlers actually
+       see, curl the live file, not this template. */ -}}
+User-agent: *
+Allow: /
+
+Sitemap: {{ "sitemap.xml" | absURL }}
