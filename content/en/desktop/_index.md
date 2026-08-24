@@ -26,3 +26,7 @@ graph TD
 - **[niri Compositor](niri/)**: The scrollable-tiling Wayland compositor — keybind routing, app launchers, lock via `loginctl`, and a `kitten`-based Quake drop-down terminal.
 - **[Noctalia Shell](noctalia/)**: The C++/native v5 shell that replaces panels and runners — bar, wallpaper picker, lock/idle, OSD, and the Claude Code companion plugin.
 - **[Theming Engine](theming/)**: A global JSON-based color scheme generator and applier (color-engine), accessible via Makefile targets.
+
+## Applications
+
+- **[Krita](krita/)**: The application that needed the most work to run on a stateless root. Covers the swap file that pointed at the `tmpfs`, the text engine, the patched G'MIC plugin, and how to drive Krita headlessly.
