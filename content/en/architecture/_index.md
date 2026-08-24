@@ -29,12 +29,13 @@ graph TD
 
 ## The Lix daemon
 
-The reference C++ Nix daemon is replaced by [**Lix**](https://lix.systems). Lix is enabled directly from nixpkgs as `pkgs.lixPackageSets.stable.lix` (configured in `nixos/configuration.nix`). This replaces the former `lix-module` flake input, ensuring Lix is binary-cached and matches nixpkgs updates.
+The reference C++ Nix daemon is replaced by [**Lix**](https://lix.systems). Lix is enabled directly from nixpkgs as `pkgs.lixPackageSets.stable.lix` (configured in `nixos/modules/nix-settings.nix`). This replaces the former `lix-module` flake input, ensuring Lix is binary-cached and matches nixpkgs updates.
 
 ## Layers
 
 | Layer            | Mechanism                                  | Page                                   |
 | :--------------- | :----------------------------------------- | :------------------------------------- |
+| Repo structure   | `modules/` + `hosts/` split, typed options | [Repo Layout & Modules](modules/)    |
 | Boot & integrity | Lanzaboote UEFI Secure Boot                | [Boot & Secure Boot](boot/)          |
 | Statelessness    | `impermanence` + `/persist` + symlinks     | [Impermanence](impermanence/)        |
 | Performance      | CachyOS kernel + sysctl tuning             | [Kernel & Performance](kernel/)      |

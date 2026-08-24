@@ -4,7 +4,7 @@ weight: 10
 ---
 
 The boot path uses **Lanzaboote** for native UEFI Secure Boot, replacing the default `systemd-boot`
-loader. Configuration lives in [`nixos/configuration.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/configuration.nix).
+loader. Configuration lives in [`nixos/modules/boot.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/boot.nix).
 
 ## Lanzaboote
 

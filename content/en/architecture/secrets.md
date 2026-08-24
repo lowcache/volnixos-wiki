@@ -9,11 +9,12 @@ in `nixos/vms.nix`) are safe to commit; they are decrypted at activation into `/
 
 ## Configuration
 
-From [`nixos/configuration.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/configuration.nix):
+From [`nixos/modules/secrets.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/secrets.nix):
 
 ```nix
 sops = {
-  defaultSopsFile = ./host-secrets.yaml;
+  # relative to the module file — the yaml lives one level up, in nixos/
+  defaultSopsFile = ../host-secrets.yaml;
   defaultSopsFormat = "yaml";
   age.sshKeyPaths = [ "/persist/etc/ssh/ssh_host_ed25519_key" ];
   secrets = {
@@ -64,4 +65,4 @@ sops edit nixos/host-secrets.yaml      # `sops <file>` alone just prints usage
 > `$HOME` directories outside the repo, not under `dots/`.
 
 **Adding a secret:** add it to `nixos/host-secrets.yaml` → declare `sops.secrets.<name>` in
-`configuration.nix` → consume it (e.g. export in `home/shell.nix`).
+`nixos/modules/secrets.nix` → consume it (e.g. export in `home/shell.nix`).
