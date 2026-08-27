@@ -69,6 +69,19 @@ To keep shutdown fast (a recurring pain point with FUSE mounts and stubborn unit
 `decapitate-fuse-mounts` oneshot force-unmounts the xdg-document-portal FUSE at shutdown to release
 `/nix`.
 
+## Where the binary comes from
+
+The CachyOS kernel is out-of-tree, so Hydra never builds it and it is not on `cache.nixos.org`. It
+is substituted from the **`attic.xuyh0120.win/lantian`** attic, which is why that substituter is in
+[`nix-settings.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/nix-settings.nix)
+and why CI asserts the kernel is a cache hit before it starts building — a source build of this
+kernel does not fit inside the GitHub Actions job limit. See
+[Binary Cache & CI](../../tooling/ci-cache/#the-kernel-assertion).
+
+Three *other* `linux-cachyos-latest` derivations are built locally on every host regardless
+(`-modules`, `-modules-shrunk`, and the host-specific `initrd-`). They are cheap and expected; only
+the kernel itself must be a download.
+
 > [!NOTE] Schedulers
 > `services.scx` (sched-ext, e.g. `scx_bpfland`) is wired in but currently disabled
 > (`enable = false`); the CachyOS kernel's default scheduler is in use.

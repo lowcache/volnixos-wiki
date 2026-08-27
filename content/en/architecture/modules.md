@@ -22,7 +22,7 @@ nixos/
 │   ├── containers.nix       docker, fooocus OCI, waydroid
 │   ├── desktop.nix          greetd/tuigreet, xdg portals
 │   ├── networking.nix       NetworkManager, wifi, tether metrics
-│   ├── nix-settings.nix     Lix daemon, substituters, GC, nixpkgs config
+│   ├── nix-settings.nix     Lix daemon, substituters, GC, nixpkgs config ([Binary Cache & CI](../tooling/ci-cache/))
 │   ├── packages.nix         systemPackages lists
 │   ├── programs.nix         git safe.directory, nix-ld, niri, appimage, fish
 │   ├── secrets.nix          the sops-nix block (see [Secrets](secrets/))

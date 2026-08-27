@@ -93,3 +93,10 @@ For `docs-deploy`, it rsyncs `./site/` to `$(DOCS_REMOTE):/$(DOCS_PROJECT)` whic
 > [!TIP] Recommended flow
 > `make check` → `make build` → `make switch`. Use `make dry-activate` first when changing services
 > to preview restarts.
+
+> [!IMPORTANT] Push before you switch
+> Every push to `main` that touches the closure builds it on CI and uploads the result to
+> `volnixos.cachix.org` — see [Binary Cache & CI](../ci-cache/). Running `make switch` *before* the
+> run goes green means building locally and then having CI rebuild the same paths. For anything
+> larger than a one-line change, and especially after `make update`, push first, wait for the run,
+> then switch: `make comm && make push` → `gh run watch` → `make switch`.
