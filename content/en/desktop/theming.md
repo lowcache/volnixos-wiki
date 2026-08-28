@@ -1,57 +1,73 @@
 ---
-title: "Theming Engine"
-description: "A global JSON colour-scheme engine driving the whole desktop stack. How themes are defined, where they live, and how they propagate across applications."
+title: "Theming"
+description: "Noctalia v5 themes the desktop itself, writing GTK 3 and 4, Qt 5 and 6, bat and Telegram themes from its own palette. The old color-engine is superseded."
 weight: 30
 ---
 
-The desktop stack uses a global, JSON-based color scheme engine. Configuration and scripts are located in `dots/color-engine/`.
+Noctalia v5 handles theming natively. Pick a scheme in Noctalia and it writes
+theme files for the rest of the desktop, so nothing else has to be wired up.
 
-## Themes
+## What Noctalia writes
 
-Themes are stored in the `themes/` directory as JSON files:
-- `amalgamation.json` ("Muted Amalgamation (Detailed)")
-- `petrified_spittoon.json` ("Petrified Spittoon (Detailed)")
-- `radioactive_slime.json` ("Radioactive Slime")
-- `ayu_green.json`
-- `ayu_red.json`
+Changing the scheme regenerates these, live:
 
-> [!NOTE]
-> `amalgamation.json` serves as the canonical template and master theme. Other themes define their palettes and reference mappings defined in this template.
+| Target | File |
+| :--- | :--- |
+| GTK 3 | `~/.config/gtk-3.0/noctalia.css` |
+| GTK 4 | `~/.config/gtk-4.0/noctalia.css` |
+| Qt 5 | `~/.config/qt5ct/colors/noctalia.conf` |
+| Qt 6 | `~/.config/qt6ct/colors/noctalia.conf` |
+| bat | `~/.config/bat/themes/noctalia.tmTheme` |
+| Telegram | `~/.config/telegram-desktop/themes/noctalia.tdesktop-theme` |
 
-## Scripts & Engine
+That is wider coverage than this host ever built by hand, which is the whole
+reason the local engine below stopped being run.
 
-The theming tools map JSON palettes onto various applications live:
+## The color-engine is superseded
 
-- `apply_theme.py`: Applies a JSON theme across the system via a `TECHNICAL_MAP`. Targets include Noctalia v5 (`~/.config/noctalia/palettes/volnix.json`), Starship (`starship.toml`), and `kitty` (`current.conf` + `tab_bar.py`). Kitty theming is applied live through a remote control socket (`unix:@mykitty`).
-- `check_theme.py`: Validates JSON theme structures. It hard-fails on invalid hex values or dangling mapping references, and warns if roles are missing compared to `amalgamation.json`.
-- `make_theme.py`: Generates new JSON themes from hex arguments or a color file. It derives backgrounds, accents, containers, dim variants, and a 16-color terminal set. This script also includes internal validation and an `--apply` flag for immediate deployment.
+`dots/color-engine/` still exists in the config repo and is **no longer used**.
 
-## Workflow
+It was written for Hyprland and the previous QML shell, where nothing propagated
+a palette on its own and a global JSON scheme with a Python applier was the only
+way to keep the bar, terminal and prompt in agreement. Noctalia v5 does that
+natively, granularly enough that a second layer on top only adds a way for the
+two to disagree.
 
-The engine is primarily operated through direct script invocations (see [Makefile](../tooling/makefile/)):
+The files are kept for reference, not because they run. `apply_theme.py` and the
+palette it generated (`~/.config/noctalia/palettes/volnix.json`) were both last
+touched on 2026-06-28.
 
-```bash
-python3 dots/color-engine/check_theme.py <theme.json>
-python3 dots/color-engine/apply_theme.py <theme.json> [true]      # 2nd arg = verbose
-python3 dots/color-engine/make_theme.py '#1e1e2e' '#cba6f7' --name "My Theme" [--out PATH] [--from FILE] [--apply] [--force]
-```
+> [!WARNING]
+> Earlier revisions of this page told you to theme the system with
+> `make theme-apply THEME=<name>`. **That target no longer exists in the
+> Makefile.** If you found this page through a search result quoting that
+> command, it is stale and the command will fail. Use Noctalia's own scheme
+> selection instead.
 
-## Application Specifics
+The engine's scripts, if you are reading the repo and want to know what they
+were: `apply_theme.py` mapped a JSON palette across applications through a
+`TECHNICAL_MAP`, `check_theme.py` validated theme structure and hard-failed on
+bad hex or dangling references, and `make_theme.py` generated a full theme
+including a 16-colour terminal set from two hex arguments.
 
-### Kitty Terminal Integration
+## Kitty
 
-The terminal environment is driven by a Home-Manager generated `kitty.conf` (located in `dots/kitty/`):
-- Uses `fish` as the default shell.
-- Font is "PunkMono Nerd Font" at size 11, with `symbol_map` settings for Nerd Font PUA ranges.
-- Features a beam cursor with a `cursor_trail`.
-- Contains a custom bottom tab bar powered by `tab_bar.py`.
-- Integrates with the theming engine via `allow_remote_control` and `listen_on unix:@mykitty`.
-- Additional colorschemes reside in `dots/kitty_colorschemes/` (e.g., `Custom.conf`, `"Modus Vivendi Tinted.conf"`).
+The terminal is configured by a Home Manager generated `kitty.conf` in
+`dots/kitty/`, independently of whatever themes the desktop:
 
-### Fonts
+- `fish` as the default shell
+- "PunkMono Nerd Font" at size 11, with `symbol_map` for the Nerd Font PUA ranges
+- Beam cursor with `cursor_trail`
+- A custom bottom tab bar from `tab_bar.py`
+- `allow_remote_control` with `listen_on unix:@mykitty`, which the old engine
+  used to push colours live and which remains useful for scripting kitty
+- Extra colourschemes in `dots/kitty_colorschemes/`
 
-The system designates specific font families for different UI roles:
-- **Main**: "Google Sans Flex"
-- **Monospace**: "JetBrains Mono NF"
-- **Expressive**: "Space Grotesk"
-- **Reading**: "Readex Pro"
+## Fonts
+
+| Role | Family |
+| :--- | :--- |
+| Main | Google Sans Flex |
+| Monospace | JetBrains Mono NF |
+| Expressive | Space Grotesk |
+| Reading | Readex Pro |

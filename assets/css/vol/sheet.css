@@ -109,3 +109,84 @@ main {
 @media (min-width: 1024px) {
   main { padding-inline: var(--dw-s6); }
 }
+
+/* ── Notify ────────────────────────────────────────────────────────────────
+   Newsletter block at the foot of a sheet. Rendered by
+   _partials/main-content/footer.html, below the adjacent navigation.
+
+   Styled as an instrument annotation rather than a call to action: hairline
+   rule, key label in the same treatment as "Rev" above it, muted note. The
+   audience for this wiki is hostile to marketing furniture and right to be, so
+   this reads as another field on the sheet and not as a banner. No colour is
+   introduced that the sheet does not already use.
+
+   The form is one row that wraps to two on a narrow viewport rather than
+   shrinking the input below a usable width. */
+.dw-notify {
+  margin-top: var(--dw-s5);
+  padding-top: var(--dw-s4);
+  border-top: var(--dw-lw-hair) solid var(--dw-hair);
+}
+
+.dw-notify__note {
+  margin: var(--dw-s2) 0 var(--dw-s3);
+  color: var(--dw-line-3);
+  max-width: var(--dw-measure);
+}
+
+.dw-notify__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dw-s2);
+  align-items: stretch;
+}
+
+/* Present for screen readers, not painted: the visible affordance is the
+   placeholder plus the note above, and a second visible label on one field
+   would read as a form to fill out rather than a line to sign. */
+.dw-notify__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dw-notify__input {
+  flex: 1 1 18rem;
+  min-width: 0;
+  padding: var(--dw-s2) var(--dw-s3);
+  background: var(--dw-paper-2);
+  border: var(--dw-lw-thin) solid var(--dw-hair);
+  color: var(--dw-line);
+  font: inherit;
+}
+
+.dw-notify__input::placeholder { color: var(--dw-line-3); }
+
+.dw-notify__input:focus-visible {
+  outline: var(--dw-lw-med) solid var(--dw-mark);
+  outline-offset: 2px;
+}
+
+.dw-notify__btn {
+  flex: 0 0 auto;
+  padding: var(--dw-s2) var(--dw-s4);
+  background: transparent;
+  border: var(--dw-lw-thin) solid var(--dw-line-3);
+  color: var(--dw-line);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--dw-ease), color var(--dw-ease);
+}
+
+.dw-notify__btn:hover { border-color: var(--dw-mark); color: var(--dw-mark); }
+
+.dw-notify__btn:focus-visible {
+  outline: var(--dw-lw-med) solid var(--dw-mark);
+  outline-offset: 2px;
+}

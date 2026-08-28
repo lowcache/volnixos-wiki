@@ -88,6 +88,12 @@ disableKinds = ["taxonomy", "term"]
 #   ID = "G-XXXXXXXXXX"
 
 [params]
+  # Buttondown list for the newsletter form at the foot of every sheet. Same
+  # list as the blog: this wiki is where the search traffic actually lands
+  # (1,268 of 1,307 impressions on the property), and until now there was no
+  # way for any of it to become anything. Empty string renders no form at all,
+  # so the partial is safe if the list ever moves.
+  buttondown = "volatiletestimony"
   enableOGXSEO = false
   # Search is a POST-BUILD step: the theme renders the UI, but the index is only
   # produced by running `pagefind --site public` after Hugo. build.sh does that.

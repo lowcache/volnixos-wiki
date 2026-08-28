@@ -52,4 +52,46 @@
     </a>
     {{ else }}<span class="dw-adjacent__spacer" aria-hidden="true"></span>{{ end }}
   </nav>
+
+  {{- /* Newsletter, at the very foot of the sheet and after the adjacent
+         navigation on purpose.
+
+         This audience is ad-hostile and correctly so, and nothing here is an
+         ad — but placement is most of the difference between an offer and an
+         interruption. It sits below the next/previous links, so a reader who
+         is moving on never has to route around it, and only a reader who has
+         actually finished sees it. No modal, no scroll trap, no dismissible
+         anything, one field.
+
+         Renders nothing when params.buttondown is empty. */ -}}
+  {{- with site.Params.buttondown }}
+  <aside class="dw-notify" aria-label="Newsletter">
+    <span class="dw-tb__key">Notify</span>
+    <p class="dw-notify__note">New sheets and field notes, in full, by email. One click to leave.</p>
+    <form
+      class="dw-notify__form"
+      action="https://buttondown.com/api/emails/embed-subscribe/{{ . }}"
+      method="post"
+      target="_blank"
+      rel="noopener"
+    >
+      {{- /* Labelled rather than placeholder-only: a bare email input is
+             unlabelled to a screen reader, and placeholders disappear on the
+             first keystroke. */ -}}
+      <label class="dw-notify__label" for="bd-email">Email address</label>
+      <input
+        id="bd-email"
+        class="dw-notify__input"
+        type="email"
+        name="email"
+        inputmode="email"
+        autocomplete="email"
+        spellcheck="false"
+        placeholder="you@example.com"
+        required
+      >
+      <button class="dw-notify__btn" type="submit">Subscribe</button>
+    </form>
+  </aside>
+  {{- end }}
 </footer>
