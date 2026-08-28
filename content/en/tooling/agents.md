@@ -1,5 +1,6 @@
 ---
 title: "Agent Toolchain"
+description: "The coding-agent toolchain on this host: which agents are installed, how their MCP servers are sandboxed, and where per-project memory is kept."
 weight: 30
 ---
 

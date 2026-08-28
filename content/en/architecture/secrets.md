@@ -1,5 +1,6 @@
 ---
 title: "Secrets — sops-nix + age"
+description: "Secrets on NixOS with sops-nix and age: key placement on an impermanent host, what must persist for decryption to work at boot, and how rotation goes."
 weight: 40
 ---
 

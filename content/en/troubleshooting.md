@@ -1,5 +1,6 @@
 ---
 title: "Troubleshooting & Known Workarounds"
+description: "Known failures on this NixOS host and the workarounds that fixed them: boot, GPU, impermanence, and the errors worth searching for by message."
 weight: 80
 ---
 

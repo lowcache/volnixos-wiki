@@ -1,5 +1,6 @@
 ---
 title: "Flake Inputs & Outputs"
+description: "Every flake input this configuration pulls and every output it exposes: hosts, home configurations, overlays, and the packages built from them."
 weight: 10
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: "Niri Compositor & UWSM"
+description: "Niri on NixOS: UWSM session management, greetd and tuigreet login, a live-edit config.kdl symlink, xwayland-satellite for X11, and the full keybind set."
 weight: 10
 ---
 

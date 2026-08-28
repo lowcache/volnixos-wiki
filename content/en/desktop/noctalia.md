@@ -1,5 +1,6 @@
 ---
 title: "Noctalia Architecture"
+description: "Noctalia v5 is a native C++ Wayland shell, compositor-agnostic, with no QML RAM cost. How it is packaged as a flake input, configured and themed on NixOS."
 weight: 20
 ---
 

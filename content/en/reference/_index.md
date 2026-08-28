@@ -1,6 +1,7 @@
 ---
 layout: single
 title: "Reference"
+description: "Reference for this configuration: every flake input and output, the Home Manager modules, and the dotfiles behind the niri and Noctalia setup."
 weight: 60
 ---
 

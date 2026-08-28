@@ -1,6 +1,7 @@
 ---
 layout: single
 title: "System"
+description: "System-level NixOS configuration: hybrid Nvidia and AMD graphics, the local AI stack, and declarative MicroVM virtualization."
 weight: 30
 ---
 

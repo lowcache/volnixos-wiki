@@ -1,5 +1,6 @@
 ---
 title: "Kernel & Performance"
+description: "Running the CachyOS kernel on NixOS with low-latency tuning, applied through the nix-cachyos-kernel overlay, and what the swap actually costs you."
 weight: 30
 ---
 

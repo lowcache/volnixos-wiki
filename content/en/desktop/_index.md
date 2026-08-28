@@ -1,6 +1,7 @@
 ---
 layout: single
 title: "Desktop Stack"
+description: "The niri and Noctalia v5 Wayland desktop on NixOS: compositor, shell, theming engine and the applications that had to be talked into cooperating."
 weight: 50
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: "Theming Engine"
+description: "A global JSON colour-scheme engine driving the whole desktop stack. How themes are defined, where they live, and how they propagate across applications."
 weight: 30
 ---
 

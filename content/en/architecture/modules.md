@@ -1,5 +1,6 @@
 ---
 title: "Repo Layout & Modules"
+description: "How this flake is laid out: the split between nixos/, home/ and modules/, and the conventions that keep a multi-host configuration navigable."
 weight: 5
 ---
 

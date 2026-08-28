@@ -1,5 +1,6 @@
 ---
 title: "Fish Functions"
+description: "The Fish shell functions that run this NixOS host: rebuild wrappers, garbage-collection helpers, and the abbreviations that replace a page of aliases."
 weight: 20
 ---
 

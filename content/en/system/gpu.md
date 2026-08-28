@@ -1,5 +1,6 @@
 ---
 title: "Hybrid GPU"
+description: "Hybrid Nvidia and AMD graphics on NixOS: PRIME offload configuration, driver selection, and getting Wayland sessions onto the right GPU."
 weight: 10
 ---
 

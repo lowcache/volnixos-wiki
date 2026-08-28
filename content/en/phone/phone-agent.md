@@ -1,5 +1,6 @@
 ---
 title: "Phone Agent"
+description: "Running a coding agent from an Android phone against a NixOS host: the MCP bridge, session handling, and what is realistic on aarch64."
 weight: 30
 ---
 

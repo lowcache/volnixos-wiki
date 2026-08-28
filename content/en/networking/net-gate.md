@@ -1,5 +1,6 @@
 ---
 title: "Tor net-gate"
+description: "A Tor gateway as a NixOS module: routing selected traffic through a net-gate VM, the firewall rules involved, and how it stays isolated from the host."
 weight: 10
 ---
 

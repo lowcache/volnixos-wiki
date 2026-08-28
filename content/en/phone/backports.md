@@ -1,5 +1,6 @@
 ---
 title: "Backports & the proot unpack bug"
+description: "The proot unpack bug on Nix-on-Droid and the backports that work around it, with the exact failure signature and what actually fixed it."
 weight: 20
 ---
 

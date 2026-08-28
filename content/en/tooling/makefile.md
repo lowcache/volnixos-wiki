@@ -1,5 +1,6 @@
 ---
 title: "Makefile & Operations"
+description: "Using a Makefile as the operations layer on NixOS: one entry point for rebuild, update, check and rollback, instead of remembering raw nix commands."
 weight: 10
 ---
 

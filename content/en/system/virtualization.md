@@ -1,5 +1,6 @@
 ---
 title: "Virtualization"
+description: "MicroVM guests on NixOS: declarative hypervisor config, systemd-networkd TAP networking, and GPU passthrough for isolated workloads."
 weight: 30
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: "Binary Cache & CI"
+description: "Binary cache and CI for a personal NixOS flake: what gets cached, how builds are pushed, and keeping rebuild times survivable on a volatile root."
 weight: 40
 ---
 

@@ -1,6 +1,7 @@
 ---
 layout: single
 title: "Phone"
+description: "NixOS on an Android phone via Nix-on-Droid: getting it working on aarch64, the proot unpack bug, and running a coding agent from the handset."
 weight: 40
 ---
 

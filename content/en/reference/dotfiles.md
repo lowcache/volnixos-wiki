@@ -1,5 +1,6 @@
 ---
 title: "Dotfiles"
+description: "The dotfiles behind this setup, including the Noctalia v5 and Niri configs, and how out-of-store symlinks keep them live-editable under Home Manager."
 weight: 30
 ---
 

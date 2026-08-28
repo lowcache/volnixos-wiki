@@ -1,5 +1,6 @@
 ---
 title: "Boot & Secure Boot"
+description: "UEFI Secure Boot on NixOS with Lanzaboote: key enrolment, signing the bootloader, and what it takes on a host whose root is rebuilt every boot."
 weight: 10
 ---
 

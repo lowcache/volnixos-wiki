@@ -1,5 +1,6 @@
 ---
 title: "Krita"
+description: "Krita on a volatile NixOS root: Flatpak versus nixpkgs, where config and brush presets have to persist, and the Qt plugin problems worth knowing about."
 weight: 40
 ---
 

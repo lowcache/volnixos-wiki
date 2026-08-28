@@ -1,6 +1,7 @@
 ---
 layout: single
 title: "Architecture"
+description: "How a stateless NixOS host is put together: tmpfs root and impermanence, Lanzaboote Secure Boot, the CachyOS kernel, and sops-nix secrets."
 weight: 10
 ---
 

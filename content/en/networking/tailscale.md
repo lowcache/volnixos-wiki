@@ -1,5 +1,6 @@
 ---
 title: "Tailscale VM"
+description: "Running Tailscale in a dedicated MicroVM on NixOS instead of on the host: declarative setup, subnet routing, and why the VM boundary is worth it."
 weight: 20
 ---
 

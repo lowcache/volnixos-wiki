@@ -1,5 +1,6 @@
 ---
 title: "Impermanence & Persistence"
+description: "A tmpfs root wiped on every boot, with nix-community/impermanence declaring exactly what survives. What persists, what does not, and where the traps are."
 weight: 20
 ---
 

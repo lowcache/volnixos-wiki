@@ -1,5 +1,6 @@
 ---
 title: "Nix-on-Droid"
+description: "Nix-on-Droid on an Android phone: getting a working Nix environment, what differs from NixOS proper, and the limits you hit on aarch64."
 weight: 10
 ---
 

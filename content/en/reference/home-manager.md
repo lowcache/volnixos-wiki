@@ -1,5 +1,6 @@
 ---
 title: "Home Manager Modules"
+description: "The Home Manager modules in this configuration: shell, desktop, editors and Niri, and how user config is split from the NixOS system layer."
 weight: 20
 ---
 

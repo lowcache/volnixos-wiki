@@ -1,5 +1,6 @@
 ---
 title: "AI Stack"
+description: "The local AI stack on NixOS: model serving, the MCP tooling around it, and how the pieces are wired declaratively rather than pinned by hand."
 weight: 20
 ---
 

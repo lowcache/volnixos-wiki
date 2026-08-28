@@ -1,6 +1,7 @@
 ---
 layout: single
 title: "Networking & MicroVMs"
+description: "Networking on NixOS through MicroVM guests: a Tailscale VM, a Tor net-gate, and the systemd-networkd TAP wiring that keeps them isolated."
 weight: 20
 ---
 

@@ -1,6 +1,7 @@
 ---
 layout: single
 title: "Tooling"
+description: "The tooling that operates this NixOS host: a Makefile ops layer, Fish functions, the coding-agent toolchain, and binary cache and CI."
 weight: 70
 ---
 
