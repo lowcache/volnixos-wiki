@@ -15,6 +15,12 @@ boot.kernelModules = [ "amdgpu" "nvidia" "nvidia_modeset" "nvidia_uvm" "nvidia_d
 services.xserver.videoDrivers = [ "nvidia" "amdgpu" ];
 ```
 
+The two lines come from separate files: `kernelModules` from
+[`nixos/hardware/asus-ryzen-nvidia/kernel.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/hardware/asus-ryzen-nvidia/kernel.nix)
+(line 5), `videoDrivers` from
+[`nixos/hardware/asus-ryzen-nvidia/gpu.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/hardware/asus-ryzen-nvidia/gpu.nix)
+(line 37).
+
 The NVIDIA-specific environment offload variables in
 [`home/default.nix`](https://github.com/lowcache/volnixos/blob/main/home/default.nix)
 (`__NV_PRIME_RENDER_OFFLOAD`, `GBM_BACKEND`, `__GLX_VENDOR_LIBRARY_NAME`, …) are **commented out** so
@@ -40,7 +46,7 @@ unloads models after `OLLAMA_KEEP_ALIVE=5m`, releasing CUDA handles so the card 
 | :------------------------------------------ | :----------------------------------------------------- |
 | AMD display-core glitches                   | `amdgpu.dcdebugmask=0x10` ([kernel params](../architecture/kernel/)) |
 | Ryzen + hybrid-GPU C-state instability      | `processor.max_cstate=1`                                |
-| Krita Qt6 canvas freeze on Wayland (Hyprland) | Unconditional native Wayland under niri resolves this. No xcb wrapper needed. ([Troubleshooting](../troubleshooting/)) |
+| Krita Qt6 canvas freeze on Wayland (Hyprland) | Unconditional native Wayland under niri resolves this — no xcb fallback needed. A `krita-wrapped` wrapper (`home/pkgs.nix`) still sets `QT_QPA_PLATFORM=wayland` and bundles a patched G'MIC. ([Troubleshooting](../troubleshooting/)) |
 
 ## Containers & libraries
 

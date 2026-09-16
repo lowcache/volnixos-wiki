@@ -8,11 +8,11 @@ weight: 30
 
 | Stack | Guests | Why |
 | :--- | :--- | :--- |
-| `microvm.nix` + `cloud-hypervisor` | [`net-gate`](../networking/net-gate/), [`tailscale`](../networking/tailscale/) | Minimal Linux gateways: fast boot, tiny footprint, declarative from the flake. |
-| `libvirt` + QEMU/KVM | `windows-vm`, `android-vm` *(dormant)* | Needs UEFI (OVMF), emulated TPM 2.0, and SPICE — none of which the cloud-hypervisor path provides. |
+| `microvm.nix` + `cloud-hypervisor` | [`net-gate`](../networking/net-gate/), [`tailscale`](../networking/tailscale/), [`anon-box`](../networking/anon-box/) | Minimal Linux guests: fast boot, tiny footprint, declarative from the flake. |
+| `libvirt` + QEMU/KVM | `windows-vm` | Needs UEFI (OVMF), emulated TPM 2.0, and SPICE — none of which the cloud-hypervisor path provides. |
 
-The two network gateways are documented under [Networking](../networking/), since that is
-what they are for. This page covers the libvirt side.
+The microVM guests are documented under [Networking](../networking/), since that is what they
+are for. This page covers the libvirt side.
 
 ## Guest inventory
 
@@ -20,8 +20,8 @@ what they are for. This page covers the libvirt side.
 | :--- | :--- | :--- | :--- | :--- |
 | `net-gate` | microvm | `true` | yes | Tor proxy (opt-in) |
 | `tailscale` | microvm | `true` | yes | Tailnet router / exit node |
+| [`anon-box`](../networking/anon-box/) | microvm | `false` | yes | Anonymous workstation guest — 2048 MB / 2 vCPU, vsock CID `12`, `192.168.102.2` |
 | `windows-vm` | libvirt | `onBoot = "ignore"` | yes | Windows 11 guest |
-| `android-vm` | libvirt | n/a | **no** | Android 15 guest — see [below](#android-vm-dormant) |
 
 ## Windows VM
 
@@ -50,8 +50,9 @@ the `virtio-win` driver ISO for the guest's storage/net/balloon drivers.
 
 > [!NOTE] Backing it out is one line
 > The module is deliberately standalone — `users.users.<name>.extraGroups` merges with the main
-> user definition rather than conflicting with it. Removing the single `./windows-vm.nix` import
-> from `configuration.nix` fully backs it out; nothing else in the config depends on it.
+> user definition rather than conflicting with it. Removing the single `../windows-vm.nix` import
+> at [`nixos/hosts/volnix.nix:12`](https://github.com/lowcache/volnixos/blob/main/nixos/hosts/volnix.nix)
+> fully backs it out; nothing else in the config depends on it.
 
 ### Storage layout
 
@@ -75,38 +76,16 @@ since Storage is itself persistent.
 > `/var/lib/libvirt` (root-owned, with libvirtd managing subdirectory permissions itself) sidesteps
 > the permission problem. `nofail` means a missing Storage filesystem cannot wedge boot.
 
-## Android VM (dormant)
-
-[`nixos/android-vm.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/android-vm.nix) is a
-685-line libvirt module for an Android 15 (API 35) x86_64 guest with GApps, aimed at Play Integrity
-and banking-app testing. It is thorough — pinned CPU flags, TPM 2.0 for the Android Keystore,
-virtio-gpu with virgl 3D, a virtiofs host share, a NAT network on `192.168.102.0/24`, ADB
-auto-connect, snapshot save/restore, and a suite of `android-vm-*` helper scripts (setup, start,
-stop, Magisk install, boot patching, root hiding, fingerprint reset, Play Integrity check).
-
-> [!CAUTION] Not part of the built system
-> `configuration.nix` imports `./vms.nix`, `./windows-vm.nix`, and `./phone-agent` — **not**
-> `./android-vm.nix`. None of the above is active: no domain is defined, no network is created,
-> and none of the `android-vm-*` commands are on `PATH`. The file is staged work, not a feature.
-
-A second blocker sits behind the first: the `sha256` hashes for the Android system image and the
-Magisk APK are placeholder values (`sha256-AAAA…`), so the fetches would fail even once the module
-is imported. Bringing it up means adding the import, filling in both real hashes, and then running
-`android-vm-setup` to convert the images to qcow2 and define the domain.
-
-> [!NOTE] Unrelated to the phone
-> Despite the name, this guest has nothing to do with the physical phone. It shares no
-> configuration with [Nix-on-Droid](../phone/nix-on-droid/) or the
-> [phone agent](../phone/phone-agent/) — it is an emulated Android running on the laptop.
-
 ## Shared host plumbing
 
 - **NetworkManager keeps its hands off.** `networking.networkmanager.unmanaged` blacklists the
-  microVM taps (`vm-netgate`, `vm-tailscale`) and the libvirt bridges (`virbr-android`,
-  `vnet-android`) so NM cannot renumber or tear down guest interfaces.
-- **Fast shutdown.** `microvm@net-gate` and `microvm@tailscale` get `TimeoutStopSec = "10s"`; their
-  paired `microvm-virtiofsd@*` units are forced to `Type = "simple"` with `TimeoutStopSec = "5s"`,
-  so a reboot is not held up by a hung virtiofs daemon.
+  microVM taps (`vm-netgate`, `vm-tailscale`) so NM cannot renumber or tear down guest interfaces.
+- **Fast shutdown.** `microvm@net-gate`, `microvm@tailscale`, and `microvm@anon-box` get
+  `TimeoutStopSec = "10s"`; their paired `microvm-virtiofsd@*` units are forced to `Type = "simple"`
+  with `TimeoutStopSec = "5s"`, so a reboot is not held up by a hung virtiofs daemon.
 - **`systemd.network.wait-online` is disabled** host-wide.
-- **Guest state lives on persistent storage** — microVM state under `/persist` via virtiofs shares,
-  libvirt state on the Storage NVMe via the bind mount above.
+- **Guest state lives on persistent storage** — `net-gate` and `tailscale` microVM state lives under
+  `/persist` via virtiofs shares, and libvirt state sits on the Storage NVMe via the bind mount
+  above. `anon-box` is the exception: its `/out` share points at
+  `/home/lowcache/Storage/anon/out`, and its journal is deliberately `Storage = "volatile"` so
+  nothing it logs outlives the guest.

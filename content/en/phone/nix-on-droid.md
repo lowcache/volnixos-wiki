@@ -26,7 +26,7 @@ nixOnDroidConfigurations.default = inputs.nix-on-droid.lib.nixOnDroidConfigurati
     config.allowUnfree = true;
   };
   modules          = [ ./droid ];
-  extraSpecialArgs = { nix-on-droid = inputs.nix-on-droid; };
+  extraSpecialArgs = { inherit (inputs) nix-on-droid; };
   home-manager-path = inputs.home-manager-droid.outPath;
 };
 ```
@@ -115,7 +115,7 @@ phone's `pkgs` for the same reason: carried, resolvable, consumed by nothing.
 ### Android integration shims
 
 `xdg-open`, `termux-wake-lock` and `termux-wake-unlock` are **on**, switched and running on the
-device as of 2026-08-20. It took two separate fixes to get there, and applying only one of them
+device as of 2026-08-03. It took two separate fixes to get there, and applying only one of them
 looks exactly like having applied neither.
 
 Every option in the `android-integration` module depends on `termux-am`, which is one of
@@ -180,6 +180,9 @@ desktop-shaped is pulled in.
   files inside the Termux sandbox root.
 - **Aliases:** `droid-switch`, `droid-build`, `droid-rollback`, `cfg`. There is no `nixos-rebuild`
   alias — that command does not exist here.
+- **Merge semantics:** `shellInit` / `interactiveShellInit` are `types.lines`, and `shellAliases`,
+  `functions`, and `home.packages` are merging options, so `droid/home.nix` appends to what
+  `home/common/` already defines rather than replacing it.
 - `home.username` / `home.homeDirectory` are intentionally left unset; the Nix-on-Droid module
   manages them.
 

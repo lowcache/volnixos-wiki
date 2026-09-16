@@ -14,7 +14,6 @@ talk to each other.
 | :--- | :--- | :--- | :--- |
 | [Nix-on-Droid](nix-on-droid/) | A real Nix store and Home Manager profile running on the phone | `com.termux.nix` | [`droid/`](https://github.com/lowcache/volnixos/blob/main/droid/) |
 | [Phone Agent](phone-agent/) | An MCP server on the phone that the **laptop** calls over Tailscale | `com.termux` | [`nixos/phone-agent/`](https://github.com/lowcache/volnixos/blob/main/nixos/phone-agent/) |
-| [Android VM](../system/virtualization/#android-vm-dormant) | A libvirt guest on the laptop — no physical phone involved | — | [`nixos/android-vm.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/android-vm.nix) |
 
 > [!WARNING] Two different Termux apps
 > The phone-agent MCP server runs in **Termux** (`com.termux`), *not* in Nix-on-Droid
@@ -31,6 +30,7 @@ graph LR
     subgraph Laptop["volnix (x86_64)"]
         HM["Home Manager<br/>home/common/"]
         PA["phone-agent module<br/>+ CLI"]
+        PUSH["push server<br/>~/push, read-only"]
     end
     subgraph Phone["Galaxy S26 Ultra (aarch64)"]
         NOD["Nix-on-Droid<br/>com.termux.nix"]
@@ -38,12 +38,16 @@ graph LR
     end
     HM -->|"shared modules"| NOD
     PA -->|"HTTP/MCP over Tailscale"| TX
+    TX -->|"pulls from ~/push"| PUSH
 ```
 
 - **Nix-on-Droid** is *built and switched on the phone*. The laptop only evaluates it. Configuration
   flows laptop → phone as shared Nix modules.
-- **Phone Agent** runs *on the laptop*, calling out to the phone. Data flows phone → laptop
-  (sensors, ingested files).
+- **Phone Agent** runs *on the laptop*, calling out to the phone for sensors and ingested files —
+  that direction stays phone → laptop. A push server now lets files move laptop → phone too, but the
+  laptop never pushes unsolicited: it serves one read-only, token-gated directory (`~/push`) on the
+  tailnet, and the phone pulls from it (`nixos/hosts/volnix.nix:98-102`). See
+  [Phone Agent](phone-agent/) for the details.
 
 ## Shared ground
 

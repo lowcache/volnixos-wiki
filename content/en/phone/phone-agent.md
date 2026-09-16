@@ -9,12 +9,13 @@ server, turning the phone into a set of remote tools and sensors the laptop can 
 The module lives in
 [`nixos/phone-agent/`](https://github.com/lowcache/volnixos/blob/main/nixos/phone-agent/) and is
 imported and enabled from
-[`nixos/configuration.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/configuration.nix).
+[`nixos/hosts/volnix.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/hosts/volnix.nix).
 
-It provides four capabilities plus a `phone-agent` CLI for ad-hoc tool calls:
+It provides five capabilities plus a `phone-agent` CLI for ad-hoc tool calls:
 
 - **MCP transport** — HTTP MCP over Tailscale, bearer-token authenticated.
 - **Ingest** — periodic pull of staged files off the phone, integrity-checked.
+- **Push** — one read-only directory served on the tailnet for the phone to pull from (opt-in).
 - **Proximity lock** — lock the laptop when the phone leaves the desk (lock only).
 - **Network routing** — derive a routing profile from the phone's current SSID (opt-in, off by default).
 
@@ -29,13 +30,14 @@ It provides four capabilities plus a `phone-agent` CLI for ad-hoc tool calls:
 ## Wiring
 
 ```nix
-# nixos/configuration.nix
-imports = [ ./phone-agent ];
+# nixos/hosts/volnix.nix
+imports = [ ../phone-agent ];
 
 phone-agent = {
   enable = true;
-  phoneTailscaleIP = "100.101.229.9";               # from the Tailscale Android app
+  phoneTailscaleIP = "100.x.x.x";                   # from the Tailscale Android app
   tokenFile = config.sops.secrets.phone_agent_token.path;
+  enablePush = true;                                # serve ~/push for the phone to pull
 };
 ```
 
@@ -49,7 +51,7 @@ store. The module asserts `tokenFile` is set.
 | Option | Type | Default | Purpose |
 | :--- | :--- | :--- | :--- |
 | `enable` | `bool` | `false` | Master switch for the subsystem. |
-| `phoneTailscaleIP` | `str` | `100.101.229.9` | Tailscale IP of the phone MCP server. |
+| `phoneTailscaleIP` | `str` | *(host-specific)* | Tailscale IP of the phone MCP server. |
 | `port` | `port` | `8462` | Phone MCP server port. |
 | `tokenFile` | `str` | *(required)* | Path to the sops bearer-token file. |
 | `ingestDir` | `str` | `/home/lowcache/ingest` | Laptop dir mirroring staged phone output. |
@@ -60,10 +62,14 @@ store. The module asserts `tokenFile` is set.
 | `enableNetworkRouting` | `bool` | `false` | SSID-derived routing profile. |
 | `proximityIntervalSec` | `int` | `5` | IMU poll interval for proximity. |
 | `allowUnlock` | `bool` | `false` | Experimental; logs intent only (see below). |
+| `enablePush` | `bool` | `false` | Serve `pushDir` on the tailnet for the phone to pull. |
+| `pushDir` | `str` | `/home/lowcache/push` | The one directory served. Nothing else is reachable. |
+| `pushPort` | `port` | `8463` | Port on `pushBindAddr`; needs a matching `forwardPorts` entry in `vms.nix`. |
+| `pushBindAddr` | `str` | `192.168.101.1` | The MicroVM tap address — **never** `0.0.0.0`. |
 
 ## Services
 
-The four capabilities do **not** map one-to-one onto services. What is actually declared:
+The five capabilities do **not** map one-to-one onto services. What is actually declared:
 
 | Unit | Type | Gated by | Trigger |
 | :--- | :--- | :--- | :--- |
@@ -72,12 +78,16 @@ The four capabilities do **not** map one-to-one onto services. What is actually 
 | `phone-ingest-watcher` | user, path | `enableIngestWatcher` | `<ingestDir>/staged/*.json` appears |
 | `phone-proximity-daemon` | user, long-running | `enableProximityLock` | starts with the session |
 | `phone-network-routing` | user, oneshot | `enableNetworkRouting` | **none — see below** |
+| `phone-push-server` | user, long-running | `enablePush` | `wantedBy = default.target` |
 
 The **MCP transport** has no service of its own and no independent toggle: it is the `phone-agent`
-CLI plus the shared `scripts/phone-mcp-call.sh` dispatcher, governed globally by `enable`.
+CLI plus the shared `nixos/phone-agent/scripts/phone-mcp-call.sh` dispatcher, governed globally by
+`enable`.
 
-Each service gets a pinned `PATH` containing only what it needs — `curl`, `coreutils`, `bash`, `jq`,
-and, for proximity, `niri` and `util-linux` (for `logger`).
+Each service gets a pinned `PATH` containing only what it needs. The MCP-calling units get `curl`,
+`coreutils` and `bash` (plus `niri` for proximity); `phone-push-server` gets `coreutils` alone,
+because it does nothing but `exec` a Python interpreter. Tools used at only one call site — `jq`,
+`util-linux`'s `logger`, `python3` — are referenced by store path instead of being put on `PATH`.
 
 ## The `phone-agent` CLI
 
@@ -94,25 +104,34 @@ Health check the transport directly with `curl -sf http://<phoneTailscaleIP>:<po
 services do the same check with a 3-second timeout and exit silently if it fails, so an unreachable
 phone is a no-op rather than an error.
 
-## MCP gateway backend
+> [!NOTE] Not fronted by mcp-gateway
+> The laptop's phone-agent is a **standalone MCP server**, reached directly by the CLI and the
+> units above. An earlier `mcp-gateway.nix` submodule shipped a gateway-backend example and an
+> unconditional warning to register it; it was removed in 2026-08 because the example used a stale
+> schema (`transport:` / `url:` / `namespace:` are not valid mcp-gateway 3.3.2 keys) and the
+> gateway route failed its auth test. Nothing needs registering. The phone's *own* mcp-gateway is
+> a separate deployment — see [backports](backports/).
 
-The module writes a template to `/etc/phone-agent/gateway-peer.example.yaml` and emits a build-time
-**warning** to register it — `~/.config/mcp-gateway/gateway.yaml` is hand-managed, so the module
-surfaces the values rather than editing it for you:
+## Push
 
-```yaml
-backends:
-  phone-agent:
-    transport: http
-    url: http://<phoneTailscaleIP>:8462/mcp
-    # Authorization: Bearer $(cat <tokenFile>)
-    namespace: phone
-```
+`phone-push-server` is the only path by which files move **laptop → phone**, and it does not reverse
+the model: it is a read-only HTTP server bound to the MicroVM tap, serving exactly one directory
+(`pushDir`, default `~/push`) behind the same bearer token as the MCP transport. The laptop never
+initiates — **the phone pulls**. As `nixos/hosts/volnix.nix` puts it, "the phone pulls from `~/push`,
+the laptop never pushes unsolicited."
 
-> [!NOTE] The warning is unconditional
-> It is emitted via `lib.optional true …`, so it fires on **every** evaluation where
-> `phone-agent.enable` is true — including long after you have registered the backend. It is a
-> permanent reminder, not a one-shot prompt.
+The scope is deliberately one directory. `pushBindAddr` is the tap address and **never** `0.0.0.0`;
+reaching it from the tailnet requires the matching `:8463` `forwardPorts` entry in `vms.nix`.
+
+Because it listens on a network, the unit is hardened like anything else exposed: `ProtectSystem =
+"strict"`, `ProtectHome = "read-only"`, `RestrictAddressFamilies = [ "AF_INET" ]`,
+`MemoryDenyWriteExecute`, a `@system-service` syscall filter, and `ReadOnlyPaths = [ pushDir ]` —
+it serves files, it never accepts them. It restarts `on-failure` after 10 seconds.
+
+The server also hardens the two things `http.server` gets wrong for this use: directory listings are
+refused outright, and paths are `realpath`-resolved before opening, so a symlink pointing out of the
+tree is answered `404` rather than `403` — a `403` would confirm the target exists. Token comparison
+uses `hmac.compare_digest`, since a plain `==` leaks the token a byte at a time.
 
 ## Ingest
 

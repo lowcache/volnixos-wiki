@@ -4,16 +4,23 @@ description: "Niri on NixOS: UWSM session management, greetd and tuigreet login,
 weight: 10
 ---
 
-The session is managed by the Universal Wayland Session Manager (UWSM). Login is handled via `greetd` and `tuigreet`, which launches the session. Niri is configured as the sole graphical session and is enabled via `programs.niri.enable` directly in `nixos/configuration.nix`.
+The session is managed by the Universal Wayland Session Manager (UWSM). Login is handled via `greetd` and `tuigreet`, which launches the session. Niri is configured as the sole graphical session and is enabled via `programs.niri.enable` in [`nixos/modules/programs.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/programs.nix), imported through `nixos/modules/default.nix`.
 
 > [!NOTE]
 > The configuration file is a live-edit out-of-store symlink pointing to `dots/niri/config.kdl` at `~/.config/niri`. Home Manager does not write files here.
 
 ## X11 Support
 
-Legacy X11 applications are supported via `xwayland-satellite` running on display `:0`. This ensures both Flatpak Qt5 apps (using the xcb plugin) and xcb-only AppImages run seamlessly.
+`xwayland-satellite` is packaged for legacy X11 app support (`home/pkgs.nix:72`), but
+it is not wired to autostart — there is no systemd unit and no `spawn-at-startup`
+for it in `config.kdl`. It is available on `$PATH` for Flatpak Qt5 apps (using the
+xcb plugin) and xcb-only AppImages, but nothing launches it automatically.
 
 ## Keybinds
+
+`config.kdl` binds around 128 keys; this page covers a selection. Treat
+[`dots/niri/config.kdl`](https://github.com/lowcache/volnixos/blob/main/dots/niri/config.kdl)
+as authoritative for anything not listed here.
 
 ### System & Launchers
 
@@ -47,8 +54,23 @@ Media and brightness keys are routed via `noctalia msg` to integrate with the No
 
 | Action | Keybind |
 |---|---|
-| Move column to adjacent workspace | `Mod` + `Shift` + `Page_Up` / `Page_Down` |
-| Move column to adjacent workspace | `Ctrl` + `Mod` + `Shift` + `Left` / `Right` |
+| Move column to adjacent workspace | `Mod` + `Ctrl` + `Up` / `Down` |
+| Move column to adjacent workspace (scroll) | `Mod` + `Ctrl` + `WheelScroll` |
+| Send column to workspace N | `Mod` + `Alt` + `1`..`9` |
+| Pull/push window into adjacent column | `Mod` + `Ctrl` + `Left` / `Right` (`consume-or-expel-window`) |
+
+`Page_Up` / `Page_Down` are left unbound (`config.kdl:166-168`): on this ASUS chassis
+those keys sit on the Fn layer and trigger Fn-lock, which interferes with `Mod+` binds.
+
+### Other Notable Binds
+
+| Action | Keybind |
+|---|---|
+| Screenshot (screen / region / window) | `Print` / `Shift`+`Print` / `Alt`+`Print` |
+| Emoji picker | `Mod` + `Period` |
+| Night light toggle | `Mod` + `Ctrl` + `N` |
+| Dark / light theme toggle | `Mod` + `Ctrl` + `B` |
+| Media / volume / brightness / keyboard backlight (XF86 keys) | work while the session is locked (`allow-when-locked=true`) |
 
 ## Quake Terminal
 
@@ -59,7 +81,7 @@ A fast drop-down terminal is provided using `kitten quick-access-terminal` and c
 | Toggle visibility | `Mod` + `Return` |
 | Position terminal | `Mod` + `Shift` + `Return` |
 | Adjust height | `Mod` + `Alt` + `Return` |
-| Adjust aspect ratio | `Mod` + `Ctrl` + `Return` |
+| Toggle orientation (landscape/portrait) | `Mod` + `Ctrl` + `Return` |
 
 > [!WARNING]
 > The terminal uses an `on-demand` focus policy in `quick-access-terminal.conf` so Niri keybinds can continue functioning while the terminal panel is active.

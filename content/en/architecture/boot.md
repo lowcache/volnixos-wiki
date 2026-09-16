@@ -11,6 +11,7 @@ loader. Configuration lives in [`nixos/modules/boot.nix`](https://github.com/low
 
 ```nix
 boot.loader.systemd-boot.enable = lib.mkForce false;
+boot.loader.systemd-boot.configurationLimit = 10;
 boot.loader.efi.canTouchEfiVariables = true;
 boot.lanzaboote = {
   enable = true;

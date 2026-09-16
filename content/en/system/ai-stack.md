@@ -6,18 +6,39 @@ weight: 20
 
 `volnix` runs a local, CUDA-accelerated AI stack plus a custom agent toolchain. The model services are
 declared in
-[`nixos/configuration.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/configuration.nix).
+[`nixos/modules/ai-stack.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/ai-stack.nix)
+and enabled for this host from
+[`nixos/hosts/volnix.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/hosts/volnix.nix) (lines 86-89).
 
 ## Ollama + Open WebUI
+
+The module exposes a small option-typed interface rather than flat `services.*` toggles, so a host
+turns each piece on independently:
+
+```nix
+vol.ai-stack = {
+  ollama.enable = true;
+  ollama.exposeToTailscaleVm = true;
+  open-webui.enable = true;
+};
+```
+
+`ollama.enable` expands, via `lib.mkMerge` / `lib.mkIf`, into the actual service:
 
 ```nix
 services.ollama = {
   enable = true;
   package = pkgs.ollama-cuda;
-  home = "/home/lowcache";
-  models = "/home/lowcache/Storage/ollama/models";
+  home = "/home/${username}";
+  modelsDir = "/home/${username}/Storage/ollama/models";
 };
+```
 
+`ollama.exposeToTailscaleVm = true` — set on this host — binds Ollama to `host = "0.0.0.0"` and opens
+port `11434` only on the `vm-tailscale` interface, so the [Tailscale VM](../networking/tailscale/) can
+reach it for the phone agent while WAN stays closed.
+
+```nix
 services.open-webui = {
   enable = true;
   port = 8080;
@@ -72,7 +93,9 @@ Outputs persist via the symlink `~/Pictures/fromAi/outputs → ~/Storage/ai-gene
 
 The user package set in
 [`home/pkgs.nix`](https://github.com/lowcache/volnixos/blob/main/home/pkgs.nix) bundles AI tooling:
-`claude-code`, `gemini-cli`, `claude-code-router`, `github-copilot-cli`, `rtk`, several MCP servers
-(`mcp-nixos`, `mcp-gateway`, `github-mcp-server`, `playwright-mcp`, `context7-mcp`, …), and the
-`llm-agents.nix` overlay. The `ai` / `ai-shell` Fish functions run any `llm-agents.nix` tool on the
-fly. The custom curation/delegation layer is documented in [Agent Toolchain](../tooling/agents/).
+`rtk`, `claude-code`, and `claude-code-router` directly, plus — via the `llm-agents.nix` overlay —
+`claude-desktop`, `ccstatusline`, `claude-plugins`, `cc-switch-cli`, `opencode`, `prime-agent`,
+`t3code`, `t3code-desktop`, `happy-coder`, `freebuff`, and `bb-app`. Alongside these sit several MCP
+servers (`mcp-nixos`, `mcp-gateway`, `github-mcp-server`, `playwright-mcp`, `context7-mcp`, …). The
+`ai` / `ai-shell` Fish functions run any `llm-agents.nix` tool on the fly. The custom
+curation/delegation layer is documented in [Agent Toolchain](../tooling/agents/).

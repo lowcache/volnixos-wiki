@@ -12,3 +12,4 @@ toolchain, and the CI build that keeps the binary cache warm.
 - [Fish Functions](fish/) — shell helpers
 - [Agent Toolchain](agents/) — memd, tether, agent-scaffold
 - [Binary Cache & CI](ci-cache/) — the volnixos cachix cache and the build workflow that fills it
+- [Starship Prompt](starship/) — the shell prompt, including its CI build-progress segment

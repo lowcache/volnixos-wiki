@@ -49,14 +49,15 @@ There is no interactive first-run step. The guest auto-joins the tailnet from a 
 `services.tailscale.authKeyFile` points at the guest path, so no guest console is needed for first
 auth. Node identity lives in the same persisted share and survives guest restarts.
 
-## Publishing Ollama to the tailnet
+## Publishing host services to the tailnet
 
 The guest SNATs host-originated traffic (`192.168.101.0/24`) onto its own tailnet IP so peers route
-replies back to the VM, and DNATs one port inbound:
+replies back to the VM, and DNATs two ports inbound:
 
 ```nix
 networking.nat.forwardPorts = [
   { proto = "tcp"; sourcePort = 11434; destination = "192.168.101.1:11434"; }
+  { proto = "tcp"; sourcePort = 8463;  destination = "192.168.101.1:8463"; }
 ];
 ```
 
@@ -64,6 +65,11 @@ Inbound `tailscale0:11434` therefore reaches the **host's** [Ollama](../system/a
 return path reuses the host's existing `100.64.0.0/10` route through this guest, so conntrack
 un-DNATs the replies. This is what lets the [phone agent](../phone/phone-agent/) reach laptop
 inference from the tailnet.
+
+`:8463` has the same shape and serves the phone-agent push server, enabled by
+`phone-agent.enablePush` in [`nixos/hosts/volnix.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/hosts/volnix.nix).
+The phone *pulls* files from the laptop over it, so laptop → phone transfer stays phone-initiated
+and needs no inbound listener on the phone. See [phone agent](../phone/phone-agent/).
 
 ## Operating it
 

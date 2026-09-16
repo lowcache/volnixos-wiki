@@ -36,27 +36,79 @@ Makefile itself, so it can never drift from the real targets.
 | :------------------ | :------------------------------ |
 | `make run-netgate`  | Start the Tor net-gate runner   |
 | `make run-tailscale`| Start the Tailscale-vm runner   |
+| `make gate-restart` | Restart the net-gate VM (REQUIRED after guest config changes) |
+
+> [!IMPORTANT] Restart the guest after config changes
+> `microvm@.service` carries `X-RestartIfChanged=false`, so `make switch` stages the new guest
+> closure but leaves the OLD guest process running. A change to net-gate's guest config (torrc, the
+> NAT rules, anything under `microvm.vms.net-gate.config`) has no effect until `make gate-restart`
+> runs, and nothing warns you otherwise. `anon-box` is the exception: unit dependencies declared in
+> `anonymous-mode.nix` re-emit `restartIfChanged`, so it does restart on a plain `make switch`.
+
+## Anonymous Mode
+
+Targets for `vol.anon-mode` — the net-gate Tor VM plus a uid jail — and the
+[anon-box](../networking/anon-box/) workstation that rides on it. See
+[Net-Gate & Anonymous Mode](../networking/net-gate/) for the L0–L5 readiness ladder these wrap.
+
+| Target                  | Action                                                        |
+| :----------------------- | :------------------------------------------------------------ |
+| `make anon-status`      | Show jail, readiness, and path state (no sudo, no side effects) |
+| `make anon-arm`         | Arm anonymous mode (runs the L0-L4 ladder; fails if unproven) |
+| `make anon-disarm`      | Disarm (re-seal the jail and reap running workloads)          |
+| `make anon-selftest`    | Prove the NEGATIVE paths (leak tests; needs an armed target)  |
+| `make anon-shell`       | Enter the anon-box workstation VM (verifies L5 first)         |
+| `make anon-box-rebuild` | Rebuild the workstation closure and restart it (after adding a tool) |
+| `make anon-run`         | Run a command as the jailed workload, e.g. `CMD="curl -s example.com"` |
+| `make anon-logs`        | Host-side ladder and jail journal                              |
+| `make anon-guest-logs`  | net-gate guest tor journal (bootstrap, circuits, rejections)   |
 
 ## Secrets Management
 
 | Target               | Action                                          |
 | :------------------- | :---------------------------------------------- |
 | `make sops-edit`     | `SOPS_AGE_KEY_FILE=$(SOPS_AGE_KEY_FILE) sops $(SOPS_FILE)` |
+| `make sops-edit-vm`  | Decrypt and edit VM secrets (host key only)      |
 | `make sops-rekey`    | `SOPS_AGE_KEY_FILE=$(SOPS_AGE_KEY_FILE) sops updatekeys $(SOPS_FILE)` |
 | `make sops-view`     | `SOPS_AGE_KEY_FILE=$(SOPS_AGE_KEY_FILE) sops -d $(SOPS_FILE)` |
+| `make sops-view-vm`  | Print decrypted VM secrets without an editor     |
+
+## Backup
+
+External-drive backup targets (see [Backup](../system/backup/)) — `backup` and `backup-force` run
+the same systemd unit udev starts on drive plug-in, so a manual run and an automatic one share one
+code path:
+
+| Target               | Action                                                     |
+| :------------------- | :----------------------------------------------------------- |
+| `make backup`        | Run the external-drive backup now (obeys the 12h cooldown)   |
+| `make backup-force`  | Run it now even if a backup succeeded within the cooldown    |
+| `make backup-mount`  | Mount the repo for manual restic work (restore, snapshots)   |
+| `make backup-umount` | Unmount and power down the drive                              |
 
 ## Flake & maintenance
 
 | Target               | Action                                          |
 | :------------------- | :--------------------------------------------- |
-| `make check`         | `nix flake check` (includes formatting/lint gates) |
+| `make check`         | `nix flake check`, then separate `deadnix --fail .` and `statix check .` passes over the whole tree |
 | `make fmt`           | Format all `.nix` with `nix fmt` (RFC 166 nixfmt) |
 | `make update`        | Update all flake inputs                          |
 | `make update-nixpkgs`| Update only `nixpkgs`                            |
 | `make trash`         | Delete >7d system generations + GC the store     |
-| `make git`           | Interactively stage, commit, and push changes  |
+| `make git`           | Push, commit, push — then hand off to a background CI poller |
+| `make ci`            | Watch the CI run for `HEAD` in the foreground (blocks; `make git` polls instead) |
 | `make comm`          | `git add .` followed by `git commit -m "$$cm"`   |
 | `make push`          | `git push` (wrapped in ssh-agent auth logic)     |
+
+`nix flake check` only evaluates git-tracked files under the flake's own `${self}`, so `make check`
+runs `deadnix` and `statix` again as separate passes over the whole tree to catch what that misses.
+
+`make git` pushes, prompts for and makes a commit, then pushes again (`push` → `comm` → `push`), and
+on success hands off to `ci-poll` rather than blocking on `gh run watch`. `ci-poll` runs as a
+background systemd user unit and feeds run progress into the starship prompt (see
+[Starship Prompt](starship/)) instead of holding the terminal. `make ci` is the foreground
+alternative — it locates the run for `HEAD` and attaches with `gh run watch`, printing the
+`paths-ignore` explanation instead if a docs-only push produced no run at all.
 
 ## Dotfiles subtree
 
@@ -80,16 +132,8 @@ The Makefile targets that used to wrap these were removed; call the scripts dire
 
 ## Documentation Wiki
 
-| Target               | Action                                          |
-| :------------------- | :---------------------------------------------- |
-| `make docs-serve`    | `$(MKDOCS) serve`                               |
-| `make docs-build`    | `$(MKDOCS) build --strict`                      |
-| `make docs-deploy`   | `rsync --delete -rv ./site/ $(DOCS_REMOTE):/$(DOCS_PROJECT)` |
-
-For `docs-deploy`, it rsyncs `./site/` to `$(DOCS_REMOTE):/$(DOCS_PROJECT)` which defaults to `pgs.sh:/wiki`.
-
-> [!NOTE]
-> The wiki is now also deployed to Cloudflare via `wrangler.toml` (`npx wrangler deploy`, assets dir `./site`), so `docs-deploy` is the older pgs.sh path — both are valid and neither is removed.
+The wiki is its own repo now (`~/CodeRepo/blogs/wiki`), alongside the other sites. Its
+serve/build/deploy targets live in that repo's own Makefile — this repo no longer wraps them.
 
 > [!TIP] Recommended flow
 > `make check` → `make build` → `make switch`. Use `make dry-activate` first when changing services
@@ -100,4 +144,5 @@ For `docs-deploy`, it rsyncs `./site/` to `$(DOCS_REMOTE):/$(DOCS_PROJECT)` whic
 > `volnixos.cachix.org` — see [Binary Cache & CI](../ci-cache/). Running `make switch` *before* the
 > run goes green means building locally and then having CI rebuild the same paths. For anything
 > larger than a one-line change, and especially after `make update`, push first, wait for the run,
-> then switch: `make comm && make push` → `gh run watch` → `make switch`.
+> then switch: `make git` → `make switch`. `make git` already hands the wait off to the background
+> `ci-poll`; run `make ci` instead to block on it in the foreground.

@@ -11,10 +11,13 @@ projects before launch.
 
 ## Functions
 
+Most of these live in
+[`home/common/fish.nix`](https://github.com/lowcache/volnixos/blob/main/home/common/fish.nix);
+`tablet` and `setwall` are host-specific and stay in `home/shell.nix`.
+
 | Function    | Description                                                                   |
 | :---------- | :--------------------------------------------------------------------------- |
-| `priv-sync` | `rsync` live persistent dirs (Documents, Pictures, repos, keys) into `priv.bkup` |
-| `setwall`   | Set wallpaper via `noctalia msg wallpaper-set` (wallpaper only — colors stay owned by `apply_theme.py`) |
+| `setwall`   | Set wallpaper via `noctalia msg wallpaper-set` (wallpaper only — the colorscheme is Noctalia's, written from its own templates) |
 | `tablet`    | Use a phone as a Krita pen tablet over USB (Weylus + `adb reverse` on port 1701) |
 | `colorhex`  | Render colored swatches around hex codes in stdin/files/args                  |
 | `extract`   | Universal archive extractor (`.tar.zst`, `.tar.xz`, `.zip`, `.deb`, …)        |
@@ -35,6 +38,7 @@ projects before launch.
 | `wifi` / `wifilist`         | `nmtui` / `nmcli device wifi list`                          |
 | `shutdown` / `bootbios`     | `systemctl poweroff` / `systemctl reboot --firmware`       |
 | `anon-on` / `anon-off` (abbr)| Start / stop the anonymous target (Tor net-gate egress)    |
+| `anon-status` (abbr)        | Status of the anonymous target and its jail/routing/check/watch units |
 
 ## Environment
 
@@ -43,9 +47,13 @@ set -gx EDITOR micro
 set -gx BROWSER brave
 set -gx PATH $HOME/.bin $HOME/.local/bin … $PATH
 set -gx SOPS_AGE_KEY_FILE $HOME/.config/sops/age/keys.txt
-# GEMINI_API_KEY / GITHUB_TOKEN sourced from /run/secrets when readable
+# GEMINI_API_KEY / GH_TOKEN / PHONE_AGENT_TOKEN / APIFY_API_KEY sourced from
+# /run/secrets when readable
 ```
 
 > [!NOTE] Other programs
-> `shell.nix` also configures git (SSH commit signing, LFS), starship, direnv + nix-direnv, the
-> micro editor (nil LSP, `nixfmt` on save), and the ssh-agent service.
+> `shell.nix` also configures git (SSH commit signing, LFS), direnv + nix-direnv, the micro
+> editor (nil LSP, `nixfmt` on save), and the ssh-agent service. `programs.starship.enable` is
+> set in [`home/common/tools.nix`](https://github.com/lowcache/volnixos/blob/main/home/common/tools.nix)
+> instead. The prompt config includes a `[custom.ci]` module for CI status; see
+> [Starship Prompt](../starship/) for the rest.

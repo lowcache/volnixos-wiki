@@ -19,7 +19,23 @@ graph LR
 
 ## What persists
 
-Persistence is declared per-user in
+Persistence is declared in two layers. The **system layer** lives in
+[`nixos/hardware-configuration.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/hardware-configuration.nix)
+under `environment.persistence."/persist"` (`hideMounts = true`):
+
+| Category         | Paths                                                                        |
+| :--------------- | :--------------------------------------------------------------------------- |
+| Identity & keys  | `/etc/ssh`, `/etc/machine-id` (file), `/etc/secureboot`, `/var/lib/sbctl`     |
+| Networking       | `/var/lib/NetworkManager`, `/etc/NetworkManager/system-connections`, `/var/lib/bluetooth` |
+| Service state    | `/var/lib/nixos`, `/var/lib/greetd`, `/var/log`, `/etc/asusd`                 |
+| Virtualization   | `/var/lib/microvm`, `/var/lib/docker`, `/var/lib/waydroid`                    |
+| Apps             | `/var/lib/flatpak`, `/var/lib/private/open-webui`                             |
+
+`/etc/ssh` matters more than it looks: the host SSH key persisted there is the age identity
+sops-nix decrypts with at boot (see [Secrets](secrets/)), and `/etc/secureboot` holds the
+Lanzaboote PKI bundle (see [Boot & Secure Boot](boot/)).
+
+The **user layer** is declared in
 [`home/persist.nix`](https://github.com/lowcache/volnixos/blob/main/home/persist.nix) under
 `home.persistence."/persist"`. Categories include:
 
@@ -27,9 +43,11 @@ Persistence is declared per-user in
 | :---------- | :----------------------------------------------------------------------- |
 | Credentials | `.ssh`, `.gnupg`, `.config/sops`, `.local/share/keyrings`                |
 | Tooling     | `.cargo`, `.rustup`, `.npm`, `.local/share/go`, `.foundry`, `.solc-select` |
-| App state   | `.config/BraveSoftware`, `.config/VSCodium`, `.ollama`, `.claude`, `.var/app`, `.local/share/noctalia`, `.local/state/noctalia` |
+| App state   | `.config/BraveSoftware`, `.config/VSCodium`, `.config/spotify`, `.ollama`, `.claude`, `.var/app`, `.local/share/noctalia`, `.local/state/noctalia`, `.local/share/waydroid`, `.local/share/opencode` |
+| Password mgr | `.config/rbw`, `.config/Bitwarden`, `.local/share/rbw`                   |
+| MCP gateway | `.mcp-gateway` (runtime state: OAuth client id, refresh tokens), `.config/mcp-gateway` (config) |
 | Caches      | `.cache/pip`, `.cache/noctalia`, `.cache/nvidia`, `.cache/llmfit`       |
-| Home dirs   | `Documents`, `Pictures`, `Downloads`, `Projects`, `CodeRepo`, `AppImage` |
+| Home dirs   | `Documents`, `Pictures`, `Downloads`, `Projects`, `CodeRepo`, `unDevel`, `AppImage`, `ZAP-Sessions`, `.bin` |
 | Memory tool | `.config/memd`, `.local/state/memd`                                       |
 | Single file | `.claude.json` (Claude Code state, lives outside `~/.claude`)            |
 
@@ -57,6 +75,33 @@ xdg.configFile."niri".source =
 > symlink — without a `home-manager` rebuild, while the files remain version-controlled. This is the
 > same philosophy applied to the agent tooling binaries in
 > [`home/scripts.nix`](https://github.com/lowcache/volnixos/blob/main/home/scripts.nix).
+
+### Redirected to `~/Storage`
+
+`~/Storage` is a separate NVMe, not part of `/persist`. Several large, re-downloadable trees are
+**not** persisted through impermanence at all — `home.file` points them at `~/Storage` with
+`mkOutOfStoreSymlink` instead:
+
+| Path              | Target                     | Why not `/persist`                                          |
+| :---------------- | :------------------------- | :---------------------------------------------------------- |
+| `~/Android`       | `~/Storage/Android`        | Android Studio SDK, multiple GB and re-downloadable          |
+| `~/.android`      | `~/Storage/.android`       | AVD root — emulator disk images                              |
+| `~/.thunderbird`  | `~/Storage/thunderbird`    | Profile root incl. local mail stores; IMAP caches grow without bound |
+| `~/.local/share/krita` | `~/Storage/krita-master/krita` | Build tree, not state                                   |
+| `~/Pictures/fromAi/outputs` | `~/Storage/ai-generation/fooocus/outputs` | Generated image output          |
+
+> [!WARNING] A path is a symlink or a persisted directory — never both
+> impermanence bind-mounts refuse a non-canonical target, so anything listed in `home.file` as an
+> out-of-store symlink must stay out of `home.persistence."/persist".directories`.
+
+### The imperative Nix profile
+
+`nix-env -iA nixos.<pkg>` writes generations under `~/.local/state/nix/profiles`, which **is**
+persisted; the `~/.nix-profile` compat symlink is not, because it is non-canonical and would be
+rejected as a bind-mount target. Nix normally creates it lazily, but on a tmpfs root it vanishes
+every boot, so `home/persist.nix` pins it declaratively (`force = true`) at
+`~/.local/state/nix/profiles/profile`. That stable target always resolves to the current
+generation, so ad-hoc installs keep landing on `PATH` via `~/.nix-profile/bin` across reboots.
 
 ## The `~/volnix` alias
 

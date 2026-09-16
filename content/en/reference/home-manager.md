@@ -24,7 +24,7 @@ imports = [
 | `default.nix` | Session variables (Wayland backends, portals), GTK theme, cursor, Antigravity desktop entries |
 | `pkgs.nix`    | User packages, grouped (dev, niri/Noctalia stack, fonts, terminal, AI CLIs) |
 | `persist.nix` | Impermanence `/persist` mappings + out-of-store dotfile symlinks              |
-| `scripts.nix` | Tor wrappers, agent-tool `~/.local/bin` symlinks (tether, agent-scaffold)      |
+| `scripts.nix` | Tor wrappers, agent-tool symlinks, and standalone helpers (`ci-poll`, `lidkeep`, `anon-run`, `playwright-mcp-nix`) |
 | `shell.nix`   | Fish (init/aliases/functions), git (SSH signing), starship, direnv, micro, ssh-agent |
 
 ## Common Portable Layer (`home/common/`)
@@ -63,7 +63,7 @@ A single `sessionVariables` set is applied to both `home.sessionVariables` and
 | :----------- | :------------------------------------------------------------------------- |
 | `baseDev`    | gcc, cmake, go, nodejs, dart-sass                                           |
 | `niriDesktop`| xwayland-satellite + file managers (caja, …), fuzzel, kitty, **floorp-bin**, spotify, vscodium, file-roller, grim/slurp/swappy |
-| `typography` | material-symbols + a large Nerd Fonts selection                            |
+| `monoTypography` | material-symbols + a large Nerd Fonts selection                         |
 | `termUi`     | Desktop-only CLI: gvfs, gh-\* helpers, tgpt, gpg-tui, ripgrep-all, pandoc, tor, flatpak, hardware control (brightnessctl, ddcutil, upower, acpi), android-tools, `volinit` |
 | `nixAi`      | claude-code, claude-code-router, gemini-cli, codex, rtk, MCP servers (nixos, gateway, github, playwright, context7, …), `llm-agents` packages |
 | `andronix`   | scrcpy, apktool, frida-tools (Android tooling)                              |
@@ -89,4 +89,14 @@ file lists, the `mkOutOfStoreSymlink` dotfile mappings, and the `~/volnix` alias
 
 ## Agent tooling (`scripts.nix`)
 
-Symlinks graduated agent tools (`tether` from `CodeRepo/tether` and `agent-scaffold` from `.nix-config/scripts`) into `~/.local/bin` (out-of-store, live-editable). The `memd` tool and its `memd-sweep` timer are deployed declaratively via the `services.memd` module. See [Agent Toolchain](../tooling/agents/).
+Symlinks graduated agent tools (`tether` from `CodeRepo/tether` and `agent-scaffold` from
+`CodeRepo/agent-scaffold`) into `~/.local/bin` (out-of-store, live-editable). The `memd` tool and its
+`memd-sweep` timer are deployed declaratively via the `services.memd` module. See
+[Agent Toolchain](../tooling/agents/).
+
+At roughly 570 lines the module also ships several standalone wrappers: the Tor SOCKS wrappers (see
+[net-gate](../networking/net-gate/#per-app-wrappers)), `anon-run` (the enforced entry point into
+anonymous mode), `lidkeep` (a `systemd-run`-managed lid-close inhibitor), `ci-poll` (the background
+poller behind starship's `[custom.ci]` module — see [Starship](../tooling/starship/)), and
+`playwright-mcp-nix` (points playwright-mcp at the driver's own bundled chromium instead of the
+nixpkgs wrapper's read-only browsers path).

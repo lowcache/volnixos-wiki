@@ -40,7 +40,7 @@ swaplocation=/home/lowcache/Storage/tmp/krita-swap
 `~/Storage` is a disk partition, so the 10 GB ceiling is now backed by disk instead of RAM.
 
 > [!IMPORTANT]
-> Krita does not read `$TMPDIR`. [`home/default.nix`](https://github.com/lowcache/volnixos/blob/main/home/default.nix) already sets `TMPDIR` to `~/Storage/tmp` for the shell, and Krita ignored it, because the swap path is its own config key. Setting `TMPDIR` globally is not enough. Every application that stores a scratch, cache, or swap directory in its own config file has to be audited separately.
+> Krita does not read `$TMPDIR`. [`home/shell.nix:46`](https://github.com/lowcache/volnixos/blob/main/home/shell.nix) already sets `TMPDIR` to `~/Storage/tmp` for the shell, and Krita ignored it, because the swap path is its own config key. Setting `TMPDIR` globally is not enough. Every application that stores a scratch, cache, or swap directory in its own config file has to be audited separately.
 
 `kritarc` itself is persisted through an out-of-store symlink in [`home/persist.nix`](https://github.com/lowcache/volnixos/blob/main/home/persist.nix), so the corrected value survives a reboot. Home Manager does not write this file and will not correct it for you.
 
@@ -109,4 +109,4 @@ The installed version is 6.0.2.1. Krita 6.0.3 was released on 29 July 2026 with 
 
 None of those are defects hit here, and nixpkgs has not packaged it. PR [#546550](https://github.com/NixOS/nixpkgs/pull/546550) is open but unmerged, so the locked flake still evaluates Krita to 6.0.2.1. There is nothing to gain from forcing the upgrade yet.
 
-The Hyprland-era XWayland wrapper is gone. Krita runs as a native Wayland client under niri, as recorded in [Troubleshooting](../../troubleshooting/) and [GPU](../../system/gpu/).
+The Hyprland-era XWayland *behavior* is gone, but the wrapper itself is still there: [`home/pkgs.nix:53-57`](https://github.com/lowcache/volnixos/blob/main/home/pkgs.nix) now sets `QT_QPA_PLATFORM wayland` instead of `xcb`, and the wrapper survives to bundle the patched G'MIC plugin rather than to pick a Qt platform. Removing it outright is a live TODO in that file (`:33-36`), not yet settled. Krita runs as a native Wayland client under niri either way, as recorded in [Troubleshooting](../../troubleshooting/) and [GPU](../../system/gpu/).

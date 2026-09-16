@@ -24,6 +24,13 @@ where an overlay can reach them.
 | `termux-am` | the `nix-on-droid` flake source | Not in nix-on-droid's overlay; upstream only ever `callPackage`s it from inside its `android-integration` module. Building it here exposes it as `pkgs.termux-am`, patched. |
 | `termux-tools` | the `nix-on-droid` flake source | Same, and it takes `termux-am` from the overlay rather than upstream's unpatched one. One derivation with eight outputs, one per shim, so a single override patches all of them. |
 
+> [!NOTE] A different deployment from the laptop's gateway route
+> This is the *on-phone* `mcp-gateway`, reached over loopback inside Nix-on-Droid. It is a separate
+> deployment from the laptop-side `mcp-gateway` backend that once fronted `phone-agent` over the
+> tailnet — that route was removed because its example used a stale schema and failed its auth test,
+> and `phone-agent` stayed a standalone MCP server (see [Phone Agent](phone-agent/)). That removal
+> does not touch this backport.
+
 That is what the overlay's third argument is for:
 
 ```nix

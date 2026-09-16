@@ -89,7 +89,8 @@ nix build --extra-substituters https://volnixos.cachix.org \
 | Build MicroVM runners | `net-gate` and `tailscale-vm` |
 | Checks (fmt + lint) | The same formatting/statix/deadnix gate as `make check` |
 
-A green run on a warm cache, measured on run `33043734080`:
+A green run on a warm cache, measured on run `33043734080` — a historical measurement from before
+the job's timeout was raised for CUDA builds (see below), and not representative of a CUDA build:
 
 | Step | Time |
 | :--- | ---: |
@@ -101,7 +102,7 @@ A green run on a warm cache, measured on run `33043734080`:
 | **Wall clock** | **~7 min** |
 
 Before the substituter list was correct, the same job compiled the kernel from source and hit the
-90-minute timeout.
+timeout then in force (90 minutes).
 
 ## The kernel assertion
 
@@ -127,8 +128,9 @@ An unanchored `linux-cachyos.*\.drv` matches the first two; `linux-cachyos-lates
 without the `/nix/store/<hash>-` prefix still matches the **initrd** as a substring. Both mistakes
 failed real builds before the anchored form stuck.
 
-`timeout-minutes: 90` backs the same assumption from the other side: if the guard is ever bypassed,
-the job dies in 90 minutes rather than burning six hours of runner time to reach the same answer.
+`timeout-minutes: 250` backs the same assumption from the other side: if the guard is ever bypassed,
+the job dies at that limit rather than burning six hours of runner time to reach the same answer. It
+started at 90 minutes and was raised twice — to 150, then to 250 — to give CUDA builds enough room.
 
 > [!TIP]
 > If this step fails, read the `nix config show substituters` output it prints first. A missing
@@ -181,15 +183,23 @@ workflow that never starts cannot cancel anything, so `paths-ignore` is the actu
 The cache only pays off if the runner builds *before* the host does:
 
 ```bash
-make comm && make push     # push the config change
-gh run watch               # wait for the build to go green
-make switch                # now a download, not a build
+make git      # push -> commit -> push, then hand off to a background CI poller
+make switch   # now a download, not a build
 ```
 
-Switching first just means building locally and then having CI rebuild the same thing. For a full
-`make update`, the difference is hours of laptop CPU versus a few minutes of runner time and a
-download.
+`make git` doesn't block on the run: it hands off to `ci-poll`, a background systemd user unit that
+feeds progress into the starship prompt (see [Starship Prompt](starship/)) instead of holding the
+terminal. Use `make ci` to watch the run in the foreground instead — it also prints the
+`paths-ignore` explanation when a docs-only push produced no run at all. Either way, wait for the run
+to go green before `make switch`; switching first just means building locally and then having CI
+rebuild the same thing. For a full `make update`, the difference is hours of laptop CPU versus a few
+minutes of runner time and a download.
 
 > [!NOTE]
 > `make switch` needs no extra flags. `volnixos.cachix.org` is already the first substituter in
 > `nix-settings.nix`, so an activated system picks up CI output automatically.
+
+> [!NOTE]
+> `cachix-action`'s upload runs as its own post step, after the rest of the job's steps complete, so
+> the cache push for a run's paths finishes last regardless of where `cachix-action` appears in the
+> job's step list.

@@ -6,7 +6,7 @@ weight: 30
 
 The system runs the **CachyOS** kernel with low-latency tuning, set in
 [`nixos/hardware/asus-ryzen-nvidia/kernel.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/hardware/asus-ryzen-nvidia/kernel.nix)
-via the `nix-cachyos-kernel` overlay (applied in `flake.nix`):
+via the `inputs.nix-cachyos-kernel.overlays.pinned` overlay (applied in `flake.nix`):
 
 ```nix
 boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest;
@@ -77,7 +77,7 @@ is substituted from the **`attic.xuyh0120.win/lantian`** attic, which is why tha
 [`nix-settings.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/nix-settings.nix)
 and why CI asserts the kernel is a cache hit before it starts building — a source build of this
 kernel does not fit inside the GitHub Actions job limit. See
-[Binary Cache & CI](../../tooling/ci-cache/#the-kernel-assertion).
+[Binary Cache & CI](../tooling/ci-cache/#the-kernel-assertion).
 
 Three *other* `linux-cachyos-latest` derivations are built locally on every host regardless
 (`-modules`, `-modules-shrunk`, and the host-specific `initrd-`). They are cheap and expected; only

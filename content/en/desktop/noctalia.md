@@ -10,8 +10,10 @@ compositor-agnostic. Noctalia completely replaces the previous QML-based shell, 
 
 ## Configuration & Management
 
-Noctalia is packaged via the `noctalia` flake input and enabled in `home/shell.nix`
-(`programs.noctalia.enable`).
+Noctalia is packaged via the `noctalia` flake input and enabled in `home/shell.nix:22`
+(`programs.noctalia.enable`). The installed binary currently reports `noctalia v5.0.1`;
+the flake input (`flake.nix:28`) tracks `github:noctalia-dev/noctalia` with no `?ref=`
+pin, so that version drifts on `nix flake update` rather than staying put.
 
 > [!NOTE]
 > The configuration is maintained as a live out-of-store symlink at `~/.config/noctalia` pointing to `dots/noctalia`. Home Manager explicitly does not write files here.
@@ -19,18 +21,27 @@ Noctalia is packaged via the `noctalia` flake input and enabled in `home/shell.n
 ## Core Features
 
 Noctalia serves as the hub for the desktop's visual and interactive elements:
-- **Wrap-Around Bar:** A top and left wrap-around bar (an "L-frame") that defines the workspace bounds.
+- **Bottom + Side Bar:** A bottom bar and a right-hand side bar (`order = ["bottom", "side"]` in `settings.toml:15`) that together frame the workspace.
 - **Lock & Idle:** Robust lock/idle handling, providing the visual lock screen interface.
 - **Media & Brightness:** Hardware control routing via `noctalia msg` IPC commands.
 - **Wallpaper Picker:** Native desktop wallpaper integration.
 
 ### Desktop & Bar Layout w/ plugins
 
-The panel layout uses a continuous visual frame composed of two segments meeting at a right
-angle:
-- **Bottom Bar:** Full width, containing system monitors (cpu/cpu temp, gpu/gpu temp, RAM, SWAP, /persist, and Download graph) an off-centered clock & weather, tray, network, volume, battery, bluetooth and session widgets.
-- **Left Bar:** Full height, housing an audio visualizer, workspaces, and the chosen plugins (oversized claude-companion pulse, calculator, clipboard, screenshot, prettier bound keys display, nix monitor, notes, and llama manager).
-- **Desktop:** An Audio visualizer widget spans the length of the left bar at the edge that gives the effect of audio bars extending from the bar onto the desktop for when a window isn't at full screen.
+Per `~/.local/state/noctalia/settings.toml`, the bar is split into two positioned
+panels rather than a single wrap-around frame:
+- **Bottom Bar** (`[bar.bottom]`, `position = "bottom"`, `:35`): Full width, containing
+  system monitors (cpu/cpu temp, gpu/gpu temp, RAM, SWAP, /persist, and Download graph)
+  an off-centered clock & weather, tray, network, volume, battery, bluetooth and session
+  widgets.
+- **Side Bar** (`[bar.side]`, `position = "right"`, `:99`): Full height, housing an audio
+  visualizer, workspaces, and the chosen plugins (oversized claude-companion pulse,
+  calculator, clipboard, screenshot, prettier bound keys display, nix monitor, notes,
+  and llama manager).
+- **Dock:** A separate `position = "left"` panel (`:257`) — the app dock, not a bar.
+- **Desktop:** An audio visualizer widget spans the length of the side bar at the edge
+  that gives the effect of audio bars extending from the bar onto the desktop for when
+  a window isn't at full screen.
 
 > [!NOTE] Claude Code companion plugin (external)
 >
@@ -46,7 +57,8 @@ Noctalia v5 themes the desktop itself. Selecting a scheme regenerates GTK 3 and
 4, Qt 5 and 6, bat and Telegram themes on the fly, so the rest of the desktop
 follows without any glue.
 
-The custom Python color-engine in `dots/color-engine/` that used to do this is
-**superseded and no longer run**, along with the `make theme-apply` target that
-drove it, which no longer exists. See [Theming](../theming/) for what replaced
-it and why.
+The custom Python color-engine in `dots/color-engine/` is not part of this
+pipeline — Noctalia writes these natively — and the `make theme-apply` target
+that used to drive it no longer exists. The engine is dormant rather than
+harmless if run directly; see [Theming](../theming/) for what replaced it and
+the hazard of running it against the live config.
