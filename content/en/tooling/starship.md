@@ -15,92 +15,18 @@ the config file itself is an out-of-store symlink to the repo copy so it can be 
 
 ## Anatomy
 
-<figure class="dw-fig">
-<svg viewBox="0 0 880 300" role="img" aria-labelledby="pr-t pr-d"
-     style="width:100%;height:auto;font-family:'Barlow Condensed',system-ui,sans-serif">
-  <title id="pr-t">Starship prompt anatomy</title>
-  <desc id="pr-d">One prompt line. The left bar descends the primary tonal ramp from gold to
-  near-black; the right bar climbs the same ramp back to gold, so the line reads as a V. Below it,
-  the unbanded input line carries the shell, root state, and command duration.</desc>
-
-  <g fill="none" stroke="var(--dw-line-3)" stroke-width="var(--dw-lw-hair,0.75)">
-    <line x1="24" y1="62" x2="856" y2="62"/>
-    <line x1="24" y1="212" x2="856" y2="212"/>
-  </g>
-  <g font-size="11" fill="var(--dw-cons-dim)" letter-spacing="0.14em">
-    <text x="24" y="54">PROMPT LINE — left_format · right_format</text>
-    <text x="24" y="204">INPUT LINE — unbanded, terminal ground</text>
-  </g>
-
-  <!-- left bar: descends, "\" shear -->
-  <g font-family="'JetBrains Mono',ui-monospace,monospace" font-size="12.5">
-    <polygon points="40,90 168,90 178,126 50,126" fill="#fddeaf"/>
-    <text x="62" y="113" fill="#3f2d0c">Tuesday·02:14PM</text>
-    <polygon points="168,90 196,90 206,126 178,126" fill="#e0c295"/>
-    <polygon points="196,90 224,90 234,126 206,126" fill="#c3a77b"/>
-    <polygon points="224,90 330,90 340,126 234,126" fill="#a78d63"/>
-    <text x="246" y="113" fill="#000000">  7.4 GiB</text>
-    <polygon points="330,90 358,90 368,126 340,126" fill="#8c734c"/>
-    <polygon points="358,90 386,90 396,126 368,126" fill="#715b35"/>
-    <polygon points="386,90 486,90 496,126 396,126" fill="#644f2b"/>
-    <text x="406" y="113" fill="#fff8f3">~/volnix</text>
-    <polygon points="486,90 508,90 518,126 496,126" fill="#584320"/>
-    <polygon points="508,90 526,90 536,126 518,126" fill="#4b3816"/>
-    <polygon points="526,90 542,90 552,126 536,126" fill="#3f2d0c"/>
-    <polygon points="542,90 556,90 566,126 552,126" fill="#271900"/>
-    <polygon points="556,90 568,90 578,126 566,126" fill="#1a0f00"/>
-  </g>
-
-  <!-- right bar: ascends, "/" shear -->
-  <g font-family="'JetBrains Mono',ui-monospace,monospace" font-size="12.5">
-    <polygon points="612,90 700,90 690,126 602,126" fill="#3f2d0c"/>
-    <text x="616" y="113" fill="#fddeaf">󰌠 3.12</text>
-    <polygon points="700,90 716,90 706,126 690,126" fill="#4b3816"/>
-    <polygon points="716,90 730,90 720,126 706,126" fill="#584320"/>
-    <polygon points="730,90 806,90 796,126 720,126" fill="#644f2b"/>
-    <text x="736" y="113" fill="#fff8f3"> main ●</text>
-    <polygon points="806,90 820,90 810,126 796,126" fill="#715b35"/>
-    <polygon points="820,90 834,90 824,126 810,126" fill="#8c734c"/>
-    <polygon points="834,90 856,90 846,126 824,126" fill="#a78d63"/>
-  </g>
-
-  <!-- input line -->
-  <g font-family="'JetBrains Mono',ui-monospace,monospace" font-size="12.5"
-     fill="var(--dw-cons)">
-    <text x="40" y="243">fish ❯ </text>
-    <text x="118" y="243" fill="var(--dw-cons-dim)">took 1.2s</text>
-  </g>
-
-  <!-- balloons -->
-  <g font-size="10.5" text-anchor="middle">
-    <g fill="none" stroke="var(--dw-line-2)" stroke-width="var(--dw-lw-thin,1)">
-      <line x1="104" y1="90" x2="104" y2="74"/><circle cx="104" cy="66" r="9"/>
-      <line x1="282" y1="126" x2="282" y2="146"/><circle cx="282" cy="154" r="9"/>
-      <line x1="440" y1="90" x2="440" y2="74"/><circle cx="440" cy="66" r="9"/>
-      <line x1="650" y1="126" x2="650" y2="146"/><circle cx="650" cy="154" r="9"/>
-      <line x1="762" y1="90" x2="762" y2="74"/><circle cx="762" cy="66" r="9"/>
-      <line x1="68" y1="243" x2="68" y2="262"/><circle cx="68" cy="270" r="9"/>
-    </g>
-    <g fill="var(--dw-cons)" font-family="'Barlow Condensed',system-ui,sans-serif">
-      <text x="104" y="70">01</text><text x="282" y="158">02</text>
-      <text x="440" y="70">03</text><text x="650" y="158">04</text>
-      <text x="762" y="70">05</text><text x="68" y="274">06</text>
-    </g>
-  </g>
-
-  <g font-size="11" fill="var(--dw-measure)" text-anchor="middle"
-     font-family="'Barlow Condensed',system-ui,sans-serif" letter-spacing="0.08em">
-    <text x="573" y="113">▸ ◂</text>
-    <text x="573" y="172">the V meets here</text>
-  </g>
+<figure class="dw-fig" style="margin:2rem 0">
+<svg viewBox="0 0 700 360" role="img" aria-labelledby="pr-t pr-d" style="width:100%;height:auto">
+<title id="pr-t">Starship prompt anatomy</title>
+<desc id="pr-d">The two bars, drawn separately. The left bar descends the primary tonal ramp from gold to near-black; the right bar climbs it back to gold. On screen they share one line, so the pair reads as a V with gold at both outer edges. Below them, the unbanded input line.</desc>
+<g font-family="'Barlow Condensed',system-ui,sans-serif" font-size="11.5" fill="var(--dw-cons-dim)" letter-spacing="0.14em"><text x="16" y="52">LEFT BAR — AMBIENT</text><text x="16" y="162">RIGHT BAR — THE WORK</text><text x="16" y="286">INPUT LINE — UNBANDED</text></g>
+<g fill="none" stroke="var(--dw-line-3)" stroke-width="0.75"><line x1="16" y1="60" x2="684" y2="60"/><line x1="16" y1="170" x2="684" y2="170"/><line x1="16" y1="294" x2="684" y2="294"/></g>
+<g font-family="'JetBrains Mono',ui-monospace,monospace" font-size="15"><polygon points="16,70 196,70 218,118 38,118" fill="#fddeaf"/><text x="30" y="101" fill="#3f2d0c">Tuesday·02:14PM</text><polygon points="196,70 218,70 240,118 218,118" fill="#e0c295"/><polygon points="218,70 240,70 262,118 240,118" fill="#c3a77b"/><polygon points="240,70 360,70 382,118 262,118" fill="#a78d63"/><text x="256" y="101" fill="#000000">7.4 GiB</text><polygon points="360,70 382,70 404,118 382,118" fill="#8c734c"/><polygon points="382,70 404,70 426,118 404,118" fill="#715b35"/><polygon points="404,70 544,70 566,118 426,118" fill="#644f2b"/><text x="420" y="101" fill="#fff8f3">~/volnix</text><polygon points="544,70 566,70 588,118 566,118" fill="#584320"/><polygon points="566,70 586,70 608,118 588,118" fill="#4b3816"/><polygon points="586,70 604,70 626,118 608,118" fill="#3f2d0c"/><polygon points="604,70 620,70 642,118 626,118" fill="#271900"/><polygon points="620,70 634,70 656,118 642,118" fill="#1a0f00"/></g>
+<g font-family="'JetBrains Mono',ui-monospace,monospace" font-size="15"><polygon points="88,180 104,180 82,228 66,228" fill="#1a0f00"/><polygon points="104,180 126,180 104,228 82,228" fill="#271900"/><polygon points="126,180 246,180 224,228 104,228" fill="#3f2d0c"/><text x="132" y="211" fill="#fddeaf">py 3.12</text><polygon points="246,180 268,180 246,228 224,228" fill="#4b3816"/><polygon points="268,180 290,180 268,228 246,228" fill="#584320"/><polygon points="290,180 428,180 406,228 268,228" fill="#644f2b"/><text x="296" y="211" fill="#fff8f3">main ● ci ok</text><polygon points="428,180 450,180 428,228 406,228" fill="#715b35"/><polygon points="450,180 472,180 450,228 428,228" fill="#8c734c"/><polygon points="472,180 572,180 550,228 450,228" fill="#a78d63"/><text x="480" y="211" fill="#000000">claude</text><polygon points="572,180 594,180 572,228 550,228" fill="#c3a77b"/><polygon points="594,180 616,180 594,228 572,228" fill="#e0c295"/><polygon points="616,180 684,180 662,228 594,228" fill="#fddeaf"/><text x="622" y="211" fill="#3f2d0c">impure</text></g>
+<g font-family="'JetBrains Mono',ui-monospace,monospace" font-size="15"><text x="16" y="320" fill="var(--dw-cons)">fish ❯</text><text x="112" y="320" fill="var(--dw-cons-dim)">took 1.2s</text></g>
+<g text-anchor="middle"><g fill="none" stroke="var(--dw-line-2)" stroke-width="1"><line x1="106" y1="70" x2="117" y2="34"/><circle cx="106" cy="22" r="12"/><line x1="300" y1="70" x2="311" y2="34"/><circle cx="300" cy="22" r="12"/><line x1="474" y1="70" x2="485" y2="34"/><circle cx="474" cy="22" r="12"/><line x1="164" y1="228" x2="175" y2="250"/><circle cx="164" cy="262" r="12"/><line x1="337" y1="228" x2="359" y2="250"/><circle cx="337" cy="262" r="12"/><line x1="500" y1="228" x2="533" y2="250"/><circle cx="500" cy="262" r="12"/><line x1="639" y1="180" x2="661" y2="152"/><circle cx="639" cy="140" r="12"/><line x1="40" y1="326" x2="40" y2="340"/><circle cx="40" cy="348" r="11"/></g><g fill="var(--dw-cons)" font-family="'Barlow Condensed',system-ui,sans-serif" font-size="13"><text x="106" y="27">01</text><text x="300" y="27">02</text><text x="474" y="27">03</text><text x="164" y="267">04</text><text x="337" y="267">05</text><text x="500" y="267">06</text><text x="639" y="145">07</text><text x="40" y="353">08</text></g></g>
 </svg>
-<figcaption>
-
-**01** `$time` · **02** `$memory_usage` · **03** `$directory` — the left bar, ambient state.
-**04** languages, then `$vcs` + `${custom.ci}` · **05** agent, `$nix_shell`, `$direnv` — the right
-bar, the work. **06** the input line: `$shell$sudo$character$cmd_duration`, unbanded.
-
-</figcaption>
+<figcaption><strong>01</strong> <code>$time</code> · <strong>02</strong> <code>$memory_usage</code> · <strong>03</strong> <code>$directory</code> — ambient state. <strong>04</strong> languages · <strong>05</strong> <code>$vcs</code> + <code>${custom.ci}</code> · <strong>06</strong> agent · <strong>07</strong> <code>$nix_shell</code> and <code>$direnv</code> — the work. <strong>08</strong> the input line: <code>$shell$sudo$character$cmd_duration</code>. The two bars share one terminal line, left-aligned and right-aligned respectively, so the pair reads as a V: gold at both outer edges, near-black where they meet.</figcaption>
 </figure>
 
 ## One ramp, run twice
