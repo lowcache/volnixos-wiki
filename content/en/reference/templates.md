@@ -52,7 +52,3 @@ understand. Discovery-driven: it finds your entry files rather than requiring a 
 
 **`ruby`** — bundler in the devShell and `bundlerEnv` for the build, so the built artifact resolves
 gems reproducibly instead of reaching out at build time.
-
-> [!NOTE] `nix flake show` currently mislabels the luau gate
-> The flake's output description for `luau` still reads "luau-analyze gate". The template moved to
-> `luau-lsp analyze` and the description has not caught up.
