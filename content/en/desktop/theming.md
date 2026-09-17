@@ -93,7 +93,7 @@ The prompt runs on `palette = "m3"`, driven by the repo-tracked
 `dots/noctalia/templates/starship-m3/` template rather than Noctalia's builtin
 `starship` template — which reads only the 8 terminal ANSI hues and was
 removed from `theme.templates.builtin_ids` because this template supersedes
-it. See [Starship Prompt](../tooling/starship/) for the rest.
+it. See [Starship Prompt]( ../../tooling/starship/) for the rest.
 
 ## Fonts
 
