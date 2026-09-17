@@ -40,16 +40,20 @@ $ curl -so /dev/null -w '%{http_code}\n' https://cache.nixos.org/p7psxbs6gpxaixf
 
 ## Substituters
 
-`nix-settings.nix` declares six substituters, own cache first so that a hit costs one round-trip:
+`nix-settings.nix` declares five substituters, own cache first so that a hit costs one round-trip:
 
 | Substituter | Supplies |
 | :--- | :--- |
 | `volnixos.cachix.org` | this closure: NVIDIA against the CachyOS kernel, patched packages, MicroVM runners |
 | `nix-community.cachix.org` | community flakes |
 | `cache.lix.systems` | the Lix daemon |
-| `cuda-maintainers.cachix.org` | CUDA-enabled builds |
 | `cache.numtide.com` | numtide packages (also used by [nix-on-droid](../../phone/nix-on-droid/#substituter)) |
 | `attic.xuyh0120.win/lantian` | **the CachyOS kernel** |
+
+> [!NOTE] `cuda-maintainers.cachix.org` was removed 2026-09-17
+> It began answering `401` on `nix-cache-info`, so Lix rejected it as "not a binary cache" and
+> warned on every command. Nothing was being substituted from it by then, so dropping it changed
+> only the log noise. Re-add the URL and its public key together if the cache goes public again.
 
 `cache.nixos.org` is not listed because Nix always consults it in addition to the configured set.
 
