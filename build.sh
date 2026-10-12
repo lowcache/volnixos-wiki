@@ -25,6 +25,17 @@ if [ "$want" != "$got" ]; then
   exit 1
 fi
 
+# enableGitInfo reads each page's last commit. Workers Builds clones shallow, so
+# every page got HEAD's date: all 38 sitemap lastmods and every sheet's "rev"
+# read as the latest deploy. Deepen the clone; if that fails, drop git info so
+# pages fall back to "—" (templates guard IsZero) instead of a wrong date.
+if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = true ]; then
+  if ! git fetch --unshallow --quiet; then
+    echo "WARN: shallow clone and --unshallow failed; building without git dates" >&2
+    export HUGO_ENABLEGITINFO=false
+  fi
+fi
+
 hugo --minify --cleanDestinationDir
 
 # Search. E25DX renders the search UI but does not build an index — pagefind

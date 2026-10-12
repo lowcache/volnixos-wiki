@@ -7,9 +7,14 @@
 # typo'd [text](phone/nix-on-drod/) publishes a 404 with a green build. Once
 # push-to-deploy is on, that reaches production unattended. This closes the gap.
 #
-# Checks resolvable internal paths only. External URLs are NOT fetched: a network
-# check in CI is flaky and would fail builds for reasons that are not our bug.
-# Fragments (#anchor) are stripped rather than verified.
+# Checks internal paths AND their #fragments; both kinds have shipped broken
+# (stale em-dash anchors 2026-08-20, 72 relative links 2026-10-12). A relative
+# href in the output is itself an error: render-link.html makes every markdown
+# link absolute, so one surviving means raw HTML bypassed it, and it resolves
+# against the page URL, not the source file.
+#
+# External URLs are NOT fetched: a network check in CI is flaky and would fail
+# builds for reasons that are not our bug.
 #
 # Runs against public/ after hugo, so it sees exactly what would be uploaded.
 
@@ -20,53 +25,54 @@ root=${1:-public}
 
 fail=0
 checked=0
+frags=0
 
-# Minified output emits unquoted attributes (href=/a/b/), so both forms matter.
-while IFS= read -r line; do
-  file=${line%%:*}
-  url=${line#*:}
+broken() { echo "BROKEN: $1  (linked from ${2#"$root"/}) $3" >&2; fail=1; }
 
-  # Strip fragment and query.
-  url=${url%%#*}
-  url=${url%%\?*}
-  [ -n "$url" ] || continue
+while IFS= read -r file; do
+  # Minified output emits unquoted attributes (href=/a/b/), so both forms matter.
+  while IFS= read -r url; do
+    path=${url%%#*}
+    path=${path%%\?*}
+    frag=
+    case $url in *#*) frag=${url#*#} ;; esac
 
-  # Internal absolute paths only. Skip protocol-relative (//host).
-  case $url in
-    //*) continue ;;
-    /*)  ;;
-    *)   continue ;;
-  esac
+    case $path in
+      //*|*:*) continue ;;              # protocol-relative or has a scheme
+      "")
+        [ -n "$frag" ] || continue
+        target=$file ;;                 # same-page #anchor
+      /*)
+        checked=$((checked + 1))
+        # A directory URL resolves to its index.html; otherwise try the literal
+        # file, then the pretty-URL and .html variants Hugo can emit.
+        t="$root$path"
+        if [ "${path%/}" != "$path" ]; then
+          target="${t}index.html"
+        elif [ -f "$t" ]; then
+          target=$t
+        elif [ -f "$t/index.html" ]; then
+          target="$t/index.html"
+        else
+          target="$t.html"
+        fi
+        [ -f "$target" ] || { broken "$url" "$file" ""; continue; } ;;
+      *)
+        broken "$url" "$file" "[relative href: bypassed render-link.html]"
+        continue ;;
+    esac
 
-  checked=$((checked + 1))
-
-  # A directory URL resolves to its index.html; otherwise try the literal file,
-  # then the pretty-URL and .html variants Hugo can emit.
-  target="$root$url"
-  if [ "${url%/}" != "$url" ]; then
-    [ -f "${target}index.html" ] && continue
-  else
-    [ -e "$target" ] && continue
-    [ -f "$target/index.html" ] && continue
-    [ -f "$target.html" ] && continue
-  fi
-
-  echo "BROKEN: $url  (linked from ${file#"$root"/})" >&2
-  fail=1
-done <<EOF
-$(grep -rohE 'href="[^"]*"|href=[^ >]+' "$root" --include='*.html' \
-    | sed -e 's/^href=//' -e 's/^"//' -e 's/"$//' \
-    | sort -u \
-    | while read -r u; do
-        # Re-attach a source file for the report; first match is enough.
-        src=$(grep -rlE "href=\"?${u//\//\\/}\"?" "$root" --include='*.html' 2>/dev/null | head -1)
-        printf '%s:%s\n' "${src:-$root}" "$u"
-      done)
-EOF
+    [ -n "$frag" ] || continue
+    frags=$((frags + 1))
+    grep -qF -e "id=\"$frag\"" -e "id=$frag " -e "id=$frag>" "$target" \
+      || broken "$url" "$file" "[no id=$frag in ${target#"$root"/}]"
+  done < <(grep -ohE 'href="[^"]*"|href=[^ >]+' "$file" \
+             | sed -e 's/^href=//' -e 's/^"//' -e 's/"$//' | sort -u)
+done < <(find "$root" -name '*.html' -not -path "$root/pagefind/*")
 
 if [ "$fail" -ne 0 ]; then
   echo "check-links: broken internal links found — not publishing" >&2
   exit 1
 fi
 
-echo "check-links: $checked internal links OK"
+echo "check-links: $checked internal links, $frags fragments OK"

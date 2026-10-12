@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="{{ site.Language.Locale | default `en-US` }}">
+
+{{- /*
+  The 404. E25DX ships none, so until this existed Cloudflare's
+  not_found_handling = "404-page" had nothing to serve and every dead link
+  returned an empty 0-byte body: no header, no nav, no way back.
+
+  Served at whatever URL was missed, so every href here must be absolute.
+  No canonical, noindex, and no data-pagefind-body: it is not a sheet of the
+  set and must not turn up in search or the index.
+*/ -}}
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="{{ site.Params.project.themeColor.light }}" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="{{ site.Params.project.themeColor.dark }}" media="(prefers-color-scheme: dark)">
+
+  <title>Not in this set · {{ site.Title | .RenderString }}</title>
+
+  {{ partial "vol/head-color.html" . }}
+  {{ partial "vol/head-fonts.html" . }}
+
+  {{- /* before the bundle, same reason as single.html */ -}}
+  {{ with site.Params.enablePageFind }}
+  <link href="{{ "pagefind/pagefind-component-ui.css" | absURL }}" rel="stylesheet">
+  {{ end }}
+
+  {{ $css := slice
+      (resources.Get "css/reset.css")
+      (resources.Get "css/theme.css")
+      (resources.Get "css/components/dropdown.css")
+      (resources.Get "css/vol/base.css")
+      (resources.Get "css/vol/chrome.css")
+      (resources.Get "css/vol/content.css")
+      (resources.Get "css/vol/sheet.css")
+      (resources.Get "css/vol/missing.css")
+    | resources.Concat "assets/css/404.css" | minify | fingerprint }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.integrity }}">
+
+  {{ partial "favicons.html" . }}
+</head>
+
+<body class="dw-missing-page">
+  {{ partial "vol/contract.html" "sheet" }}
+
+  <div id="content-wrapper">
+    {{ partial "site/header.html" . }}
+
+    <main class="dw-missing">
+      <article class="dw-sheet">
+        <header id="article-header" class="dw-sheethead">
+          <h1>No sheet at this address</h1>
+          <p class="dw-sheethead__lede">Nothing in the set is filed under this URL. The page may have been
+            merged or removed in a config sync, or the link has a typo. Search for it, or start from its section.</p>
+          <p class="dw-sheethead__id">
+            <span class="dw-tag dw-tag--fig dw-missing__addr" id="missing-addr"></span>
+            <span class="dw-tag">404 · not in set</span>
+          </p>
+        </header>
+
+        <div id="article-body">
+          {{ with site.Params.enablePageFind }}
+          <section class="dw-missing__search" aria-labelledby="missing-search">
+            <h2 id="missing-search">Search the set</h2>
+            <pagefind-input placeholder="Search every sheet"></pagefind-input>
+            <pagefind-summary></pagefind-summary>
+            <pagefind-results max-results="5" hide-sub-results></pagefind-results>
+          </section>
+          {{ end }}
+
+          <section aria-labelledby="missing-index">
+            <h2 id="missing-index">Sheet index</h2>
+            <ol class="dw-index">
+              {{ range site.Menus.main }}
+                {{ with site.GetPage .Identifier }}
+                <li class="dw-index__row">
+                  <span class="dw-index__fig">VN-{{ mul .Weight 10 }}</span>
+                  <a class="dw-index__name" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+                  {{ with .Description }}<span class="dw-index__desc">{{ . }}</span>{{ end }}
+                </li>
+                {{ end }}
+              {{ end }}
+            </ol>
+          </section>
+        </div>
+
+        {{ partial "vol/title-block.html" (dict
+            "sheet" "—"
+            "title" "Not in this set"
+            "rev" "—"
+            "scale" "NTS") }}
+      </article>
+    </main>
+
+    {{ partial "site/footer.html" . }}
+  </div>
+
+  {{- $js := slice
+      (resources.Get "js/components/dropdown.js")
+      (resources.Get "js/site/color-preference.js")
+    | resources.Concat "assets/js/404.js" | minify | fingerprint }}
+  <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.integrity }}" defer></script>
+
+  {{ with site.Params.enablePageFind }}
+  <script src="{{ "pagefind/pagefind-component-ui.js" | absURL }}" type="module"></script>
+  {{ end }}
+
+  {{- /* Show the missed path, and seed the search with its last segment:
+      /desktop/noctalia-v5/ searches "noctalia v5". Without JS the tag stays
+      empty (hidden by :empty) and the index still works. */ -}}
+  <script>
+    (() => {
+      const path = decodeURIComponent(location.pathname);
+      document.getElementById('missing-addr').textContent = path;
+      const seg = path.split('/').filter(Boolean).pop() || '';
+      const query = seg.replace(/\.html?$/, '').replace(/[-_.]+/g, ' ').trim();
+      if (!query) return;
+      let tries = 300;  // ~5s of frames; Pagefind may never load (offline, blocked)
+      const seed = () => {
+        const input = document.querySelector('.dw-missing__search .pf-input');
+        if (!input) return --tries > 0 && requestAnimationFrame(seed);
+        input.value = query;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+      if (document.querySelector('.dw-missing__search')) seed();
+    })();
+  </script>
+</body>
+</html>

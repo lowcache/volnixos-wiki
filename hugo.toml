@@ -10,8 +10,8 @@ enableInlineShortcodes = true
 enableEmoji = true
 # Sheet revision dates come from git commit history. Without this every page
 # reports .Lastmod as 0001-01-01, which the title block printed verbatim.
-# Templates still guard on IsZero so a shallow CI clone degrades to "—"
-# rather than to a wrong date.
+# A shallow clone does NOT degrade to "—": it gives every page HEAD's date.
+# build.sh unshallows first, or disables git info so the IsZero guards apply.
 enableGitInfo = true
 
 # The wiki has no taxonomies. E25DX disables these in its own reference config;

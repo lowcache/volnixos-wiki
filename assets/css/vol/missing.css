@@ -1,0 +1,88 @@
+/* =====================================================================
+   MISSING SHEET — the 404. A lookup against the drawing-set index that
+   found nothing. The missed address is the one located item (magenta, in
+   the sheet-number tag); search and the index are the two ways back.
+   Only layouts/404.html loads this file.
+   ===================================================================== */
+
+.dw-missing {
+  max-width: var(--dw-sheet-max);
+  margin-inline: auto;
+}
+
+/* filled by script; without JS there is nothing to show */
+.dw-missing__addr:empty { display: none; }
+/* a URL is case-sensitive; the tag's drafting caps would misquote it */
+.dw-missing__addr { overflow-wrap: anywhere; text-transform: none; }
+
+/* ---- search: a ruled panel, not a card ----------------------------- */
+
+.dw-missing__search {
+  padding: var(--dw-s4);
+  background: var(--dw-paper-2);
+  border: var(--dw-lw-thin) solid var(--dw-hair);
+}
+/* the panel keyline and the schedule's own top rule already draw these zones */
+.dw-missing #article-body h2 {
+  padding-top: 0;
+  border-top: 0;
+}
+.dw-missing__search h2 { margin-top: 0; }
+.dw-missing__search pagefind-results:not(:empty) {
+  display: block;
+  margin-top: var(--dw-s3);
+}
+
+/* ---- index: the drawing-set schedule ------------------------------- */
+
+#article-body .dw-index {
+  max-width: none;
+  padding: 0;
+  list-style: none;
+  border-top: var(--dw-lw-thin) solid var(--dw-line-3);
+}
+
+.dw-index__row {
+  display: grid;
+  grid-template-columns: 6rem 10rem minmax(0, 1fr);
+  gap: var(--dw-s1) var(--dw-s4);
+  align-items: baseline;
+  padding: var(--dw-s3) var(--dw-s2);
+  margin: 0;
+  border-bottom: var(--dw-lw-hair) solid var(--dw-hair);
+  transition: background 0.15s var(--dw-ease);
+}
+.dw-index__row:hover { background: var(--dw-t1); }
+
+.dw-index__fig {
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+  color: var(--dw-line-3);
+}
+
+.dw-index__name {
+  font-family: var(--font-cond);
+  font-size: 1.12rem;
+  font-weight: 600;
+  color: var(--dw-line);
+  text-decoration: none;
+}
+.dw-index__name:hover { text-decoration: underline; text-decoration-color: var(--dw-cons); }
+
+/* the whole row is the hit target, without nesting the description in the link */
+.dw-index__row { position: relative; }
+.dw-index__name::after { content: ""; position: absolute; inset: 0; }
+
+.dw-index__desc {
+  color: var(--dw-line-2);
+  font-size: 0.94rem;
+  text-wrap: pretty;
+}
+
+@media (max-width: 743px) {
+  .dw-index__row { grid-template-columns: 5rem minmax(0, 1fr); }
+  .dw-index__desc { grid-column: 2; }
+}
+
+.dw-missing .dw-titleblock { margin-top: var(--dw-s8); }
