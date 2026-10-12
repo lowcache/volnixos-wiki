@@ -5,12 +5,12 @@ weight: 25
 ---
 
 The prompt is a hand-authored [`dots/starship/starship.toml`](https://github.com/lowcache/volnixos/blob/main/dots/starship/starship.toml)
-(475 lines) whose colour block is machine-generated. It runs on `palette = "m3"` — Material 3 role
+(474 lines) whose colour block is machine-generated. It runs on `palette = "m3"` — Material 3 role
 names and two 18-step tonal ramps emitted by [Noctalia](../desktop/noctalia/), not literal hex. A
 colour-scheme change therefore moves the whole prompt with it and no hex is ever recomputed by hand.
 
 `programs.starship.enable` is set in
-[`home/common/tools.nix:77`](https://github.com/lowcache/volnixos/blob/main/home/common/tools.nix);
+[`home/common/tools.nix:74`](https://github.com/lowcache/volnixos/blob/main/home/common/tools.nix);
 the config file itself is an out-of-store symlink to the repo copy so it can be edited live.
 
 ## Anatomy
@@ -133,7 +133,7 @@ command = "cat $XDG_RUNTIME_DIR/volnixos-ci"
 
 Starship runs a custom module's command on every prompt and kills it at 500 ms, so the polling
 happens elsewhere: `ci-poll`
-([`home/scripts.nix`](https://github.com/lowcache/volnixos/blob/main/home/scripts.nix)) runs in the
+([`home/ci-poll.nix`](https://github.com/lowcache/volnixos/blob/main/home/ci-poll.nix)) runs in the
 background, queries GitHub, and leaves one short line in tmpfs. `when` is the gate and `cat` is the
 command — about 8 ms. `make git` starts the poller; `make ci` is the foreground watcher. See
 [CI & binary cache](ci-cache/).

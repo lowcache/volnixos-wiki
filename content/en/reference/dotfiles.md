@@ -12,7 +12,6 @@ apply live without a rebuild.
 ```text
 dots/
 ├── .memory/             # memd project memory (state/decisions/mistakes/todo + inbox)
-├── .model/              # agent-scaffold guides (CLAUDE.md etc.)
 ├── cava/                # audio visualizer: shaders + gradient themes
 ├── fastfetch/           # system info fetch (config.jsonc)
 ├── fuzzel/              # application launcher (fuzzel.ini + theme)
@@ -21,8 +20,10 @@ dots/
 ├── kitty_colorschemes/  # extra kitty colorschemes
 ├── niri/                # niri compositor: config.kdl, scripts, quake terminal
 ├── noctalia/            # Noctalia v5 shell: config.toml + templates/starship-m3/
+├── omo/                 # OmO agent: mcp.json + memd/rtk/statusline extensions
 ├── starship/            # prompt: starship.toml + three inert reference configs
-└── wlogout/             # Wayland logout menu (layout + style.css)
+├── wlogout/             # Wayland logout menu (layout + style.css)
+└── CLAUDE.md            # agent guide scoped to dots/
 ```
 
 Most of these are detailed in the [Desktop](../desktop/) section. A quick reference:
@@ -52,7 +53,7 @@ custom-palette layer at `noctalia/palettes/volnix.json`, which was dropped.
 
 The `[custom.ci]` module renders CI state for the last pushed commit. Starship kills a custom
 module's command at 500 ms, so it never touches the network: `ci-poll` (see
-[Home Manager Modules](../home-manager/#agent-and-shell-scripting-scriptsnix)) polls GitHub in the
+[Home Manager Modules](home-manager/#ci-status-feed-ci-pollnix)) polls GitHub in the
 background and leaves one short line in `$XDG_RUNTIME_DIR`, which the module `cat`s. The segment
 hides when that file is empty.
 

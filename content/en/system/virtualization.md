@@ -18,16 +18,16 @@ are for. This page covers the libvirt side.
 
 | Guest | Stack | Autostart | Imported? | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| `net-gate` | microvm | `true` | yes | Tor proxy (opt-in) |
+| `net-gate` | microvm | `true` | only with `vol.anon-mode.enable` (on here) | Tor gateway for anonymous mode |
 | `tailscale` | microvm | `true` | yes | Tailnet router / exit node |
-| [`anon-box`](../networking/anon-box/) | microvm | `false` | yes | Anonymous workstation guest — 2048 MB / 2 vCPU, vsock CID `12`, `192.168.102.2` |
+| [`anon-box`](../networking/anon-box/) | microvm | `false` | only with `vol.anon-mode.enable` (on here) | Anonymous workstation guest — 2048 MB / 2 vCPU, vsock CID `12`, `192.168.102.2` |
 | `windows-vm` | libvirt | `onBoot = "ignore"` | yes | Windows 11 guest |
 
 ## Windows VM
 
 [`nixos/windows-vm.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/windows-vm.nix) is a
-self-contained QEMU/KVM + libvirt stack for a Windows 11 guest. It is kept out of `vms.nix` on
-purpose: Windows 11 requires full QEMU with UEFI (OVMF, including Secure Boot variants) and an
+self-contained QEMU/KVM + libvirt stack for a Windows 11 guest. It is kept apart from the MicroVM
+guests (`vms.nix`, `modules/anonymous-mode/guests.nix`) on purpose: Windows 11 requires full QEMU with UEFI (OVMF, including Secure Boot variants) and an
 emulated **TPM 2.0** via `swtpm`, and the cloud-hypervisor microVM path provides neither.
 
 ```nix
@@ -51,7 +51,7 @@ the `virtio-win` driver ISO for the guest's storage/net/balloon drivers.
 > [!NOTE] Backing it out is one line
 > The module is deliberately standalone — `users.users.<name>.extraGroups` merges with the main
 > user definition rather than conflicting with it. Removing the single `../windows-vm.nix` import
-> at [`nixos/hosts/volnix.nix:12`](https://github.com/lowcache/volnixos/blob/main/nixos/hosts/volnix.nix)
+> at [`nixos/hosts/volnix.nix:13`](https://github.com/lowcache/volnixos/blob/main/nixos/hosts/volnix.nix)
 > fully backs it out; nothing else in the config depends on it.
 
 ### Storage layout
@@ -79,13 +79,18 @@ since Storage is itself persistent.
 ## Shared host plumbing
 
 - **NetworkManager keeps its hands off.** `networking.networkmanager.unmanaged` blacklists the
-  microVM taps (`vm-netgate`, `vm-tailscale`) so NM cannot renumber or tear down guest interfaces.
-- **Fast shutdown.** `microvm@net-gate`, `microvm@tailscale`, and `microvm@anon-box` get
+  microVM taps (`vm-tailscale` from `vms.nix`, `vm-netgate` from `anonymous-mode/guests.nix`) so NM
+  cannot renumber or tear down guest interfaces.
+- **Fast shutdown.** Every `microvm@<name>` declared in `microvm.vms` (`net-gate`, `tailscale`,
+  `anon-box`) gets
   `TimeoutStopSec = "10s"`; their paired `microvm-virtiofsd@*` units are forced to `Type = "simple"`
   with `TimeoutStopSec = "5s"`, so a reboot is not held up by a hung virtiofs daemon.
 - **`systemd.network.wait-online` is disabled** host-wide.
+- **Shared guest base.** [`nixos/vm-guest-base.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/vm-guest-base.nix)
+  gives every MicroVM guest networkd, an enabled firewall, `cloud-hypervisor`, and
+  `random.trust_cpu=on` so early boot (vsock, Tor) is not starved of entropy.
 - **Guest state lives on persistent storage** — `net-gate` and `tailscale` microVM state lives under
-  `/persist` via virtiofs shares, and libvirt state sits on the Storage NVMe via the bind mount
+  `/persist` (LUKS2-encrypted) via virtiofs shares, and libvirt state sits on the Storage NVMe via the bind mount
   above. `anon-box` is the exception: its `/out` share points at
   `/home/lowcache/Storage/anon/out`, and its journal is deliberately `Storage = "volatile"` so
   nothing it logs outlives the guest.

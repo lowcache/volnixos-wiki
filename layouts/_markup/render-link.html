@@ -1,0 +1,19 @@
+{{- /*
+  Overrides E25DX's render-link.html; same output, except relative links.
+  The MkDocs port kept MkDocs-style links, which resolve against the SOURCE file's
+  directory (`../architecture/kernel/` from system/gpu.md). A browser resolves them
+  against the page URL (/system/gpu/), so 72 of them 404'd live. Resolving here and
+  emitting an absolute path also puts them in front of check-links.sh, which skips
+  relative hrefs.
+*/ -}}
+{{- $dest := .Destination -}}
+{{- $u := urls.Parse $dest -}}
+{{- if and $dest (not $u.Scheme) (not $u.Host) (not (strings.HasPrefix $dest "/")) (not (strings.HasPrefix $dest "#")) -}}
+  {{- $dir := "" -}}
+  {{- with .Page.File }}{{ $dir = .Dir }}{{ end -}}
+  {{- $p := path.Join "/" $dir $u.Path -}}
+  {{- if and (strings.HasSuffix $u.Path "/") (ne $p "/") }}{{ $p = printf "%s/" $p }}{{ end -}}
+  {{- with $u.Fragment }}{{ $p = printf "%s#%s" $p . }}{{ end -}}
+  {{- $dest = $p -}}
+{{- end -}}
+<a href="{{ $dest | safeURL }}"{{ with .Title}} title="{{ . }}"{{ end }}{{ if or (strings.HasPrefix .Destination "http") (strings.HasPrefix .Destination "https") }} target="_blank"{{ end }} >{{ .Text | safeHTML }}</a>

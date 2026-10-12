@@ -14,6 +14,8 @@ imports = [
   ./persist.nix
   ./pkgs.nix
   ./scripts.nix
+  ./ci-poll.nix
+  ./mcp-gateway.nix
   ./shell.nix
   inputs.memd.homeManagerModules.default
 ];
@@ -21,10 +23,12 @@ imports = [
 
 | Module        | Responsibility                                                                |
 | :------------ | :--------------------------------------------------------------------------- |
-| `default.nix` | Session variables (Wayland backends, portals), GTK theme, cursor, Antigravity desktop entries |
+| `default.nix` | Session variables (Wayland backends, portals), GTK theme, cursor themes installed (the Noctalia Cursor plugin owns selection), Antigravity desktop entries |
 | `pkgs.nix`    | User packages, grouped (dev, niri/Noctalia stack, fonts, terminal, AI CLIs) |
 | `persist.nix` | Impermanence `/persist` mappings + out-of-store dotfile symlinks              |
-| `scripts.nix` | Tor wrappers, agent-tool symlinks, and standalone helpers (`ci-poll`, `lidkeep`, `anon-run`, `playwright-mcp-nix`) |
+| `scripts.nix` | Tor wrappers, the `tether` symlink, opencode config, and standalone helpers (`lidkeep`, `anon-run`, `playwright-mcp-nix`) |
+| `ci-poll.nix` | The `ci-poll` CI status feed for the starship prompt |
+| `mcp-gateway.nix` | `mcp-gateway` as a declared user service |
 | `shell.nix`   | Fish (init/aliases/functions), git (SSH signing), starship, direnv, micro, ssh-agent |
 
 ## Common Portable Layer (`home/common/`)
@@ -36,7 +40,7 @@ it inside Nix-on-Droid, so both environments get the same shell and the same CLI
 | File | Contents |
 | :--- | :--- |
 | `default.nix` | Aggregator — imports the other three |
-| `fish.nix`    | Fish config, abbreviations, and the `agy` / `ai` / `ai-shell` helper functions |
+| `fish.nix`    | Fish config, abbreviations, and the `ai` / `ai-shell` helper functions |
 | `packages.nix`| The portable CLI core (POSIX baseline, fish, git, ripgrep, jq, micro, sops, …) |
 | `tools.nix`   | Shared tool configuration (micro, direnv, and friends) |
 
@@ -89,14 +93,26 @@ file lists, the `mkOutOfStoreSymlink` dotfile mappings, and the `~/volnix` alias
 
 ## Agent tooling (`scripts.nix`)
 
-Symlinks graduated agent tools (`tether` from `CodeRepo/tether` and `agent-scaffold` from
-`CodeRepo/agent-scaffold`) into `~/.local/bin` (out-of-store, live-editable). The `memd` tool and its
+Symlinks the graduated `tether` (from `CodeRepo/tether`) into `~/.local/bin` (out-of-store,
+live-editable), and writes `opencode`'s config for tether's free-tier worker backend. The `memd` tool and its
 `memd-sweep` timer are deployed declaratively via the `services.memd` module. See
 [Agent Toolchain](../tooling/agents/).
 
-At roughly 570 lines the module also ships several standalone wrappers: the Tor SOCKS wrappers (see
+The module also ships several standalone wrappers: the Tor SOCKS wrappers (see
 [net-gate](../networking/net-gate/#per-app-wrappers)), `anon-run` (the enforced entry point into
-anonymous mode), `lidkeep` (a `systemd-run`-managed lid-close inhibitor), `ci-poll` (the background
-poller behind starship's `[custom.ci]` module — see [Starship](../tooling/starship/)), and
-`playwright-mcp-nix` (points playwright-mcp at the driver's own bundled chromium instead of the
-nixpkgs wrapper's read-only browsers path).
+anonymous mode), `lidkeep` (a `systemd-run`-managed lid-close inhibitor), and `playwright-mcp-nix`
+(points playwright-mcp at the driver's own bundled chromium instead of the nixpkgs wrapper's
+read-only browsers path).
+
+## CI status feed (`ci-poll.nix`)
+
+`ci-poll`, the background poller behind starship's `[custom.ci]` module, moved out of `scripts.nix`
+into its own module,
+[`home/ci-poll.nix`](https://github.com/lowcache/volnixos/blob/main/home/ci-poll.nix). `make git`
+spawns it; it follows the GitHub Actions run for the commit just pushed and keeps one line in
+`$XDG_RUNTIME_DIR/volnixos-ci`, which the prompt only `cat`s. See [Starship](../tooling/starship/).
+
+## MCP gateway (`mcp-gateway.nix`)
+
+Declares `mcp-gateway` as a Home Manager user service. See
+[Agent Toolchain](../tooling/agents/#mcp-servers).

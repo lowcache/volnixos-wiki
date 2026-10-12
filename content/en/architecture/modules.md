@@ -19,7 +19,12 @@ nixos/
 │                            also imports ../vms.nix, ../windows-vm.nix, ../phone-agent
 ├── modules/
 │   ├── default.nix          module-layer aggregator: imports every file below
-│   ├── anonymous-mode.nix   option-typed: UID-marked Tor egress + the anon-box guest
+│   ├── anonymous-mode/      option-typed: uid-routed Tor egress + the anonymity guests
+│   │   ├── default.nix      enforcement: policy routing, readiness ladder, anonymous.target
+│   │   ├── options.nix      the vol.anon-mode.* declarations
+│   │   ├── scripts.nix      shell tooling (anon-shell, anon-exec, anon-selftest, routing up/down, probes)
+│   │   ├── guests.nix       net-gate + anon-box MicroVMs and their host plumbing
+│   │   └── anon-vsock.py    vsock client for anon-shell
 │   ├── ai-stack.nix         option-typed: Ollama + Open WebUI
 │   ├── audio.nix            option-typed: PipeWire/WirePlumber, ALSA card parking
 │   ├── backup.nix           option-typed: plug-triggered restic backup to an external drive
@@ -27,22 +32,24 @@ nixos/
 │   ├── containers.nix       docker, fooocus OCI, waydroid
 │   ├── desktop.nix          greetd/tuigreet, xdg portals
 │   ├── networking.nix       NetworkManager, wifi, tether metrics
-│   ├── nix-settings.nix     Lix daemon, substituters, GC, nixpkgs config ([Binary Cache & CI](../tooling/ci-cache/))
+│   ├── nix-settings.nix     Lix daemon, substituters, nh clean (GC), nixpkgs config ([Binary Cache & CI](../tooling/ci-cache/))
 │   ├── packages.nix         systemPackages lists
+│   ├── persist-luks.nix     option-typed: LUKS2 /persist + USB-stick/key-chord unlock
+│   ├── chordgate/           C source for the initrd key-chord reader (+ its test)
 │   ├── programs.nix         git safe.directory, nix-ld, niri, appimage, fish
 │   ├── secrets.nix          the sops-nix block (see [Secrets](secrets/))
 │   ├── services.nix         small service toggles (upower, asusd, flatpak, …)
 │   ├── systemd.nix          manager tuning, tmpfiles scaffolding, build temp
 │   └── users.nix            human accounts
-├── overlays/
-│   ├── brave.nix
-│   └── pandas-stubs.nix
-├── hardware/asus-ryzen-nvidia/
+├── hardware/asus-ryzen-nvidia/   gpu.nix, kernel.nix, keyboard-rgb.nix
 ├── hardware-configuration.nix   filesystems, zram/swapfile, system-level persistence
 ├── .sops.yaml                   sops creation rules (see [Secrets](secrets/))
 ├── host-secrets.yaml            sops-encrypted host secrets
 ├── vm-secrets.yaml              sops-encrypted MicroVM secrets
-├── vms.nix                  MicroVM guests ([Networking](../networking/))
+├── vms.nix                  MicroVM host + the tailscale guest ([Networking](../networking/))
+├── vm-guest-base.nix        settings shared by every MicroVM guest
+├── tests/
+│   └── anon-jail.nix        NixOS VM test behind checks.anon-jail
 ├── windows-vm.nix
 └── phone-agent/             already option-typed ([Phone](../phone/phone-agent/))
 ```
@@ -54,15 +61,17 @@ Aggregation is split across two places: `nixos/default.nix` imports `./modules` 
 `modules/`. Adding a second host later means adding `hosts/<name>.nix` — the module layer does not
 change.
 
-## Why four features got real options
+## Why some features got real options
 
 Most modules are plain `config = { ... }` bodies in cohesive files — over-optionizing constants is
 its own anti-pattern. Options exist only where coupling was previously *invisible*:
 
 | Option set | Couples |
 | :--------- | :------ |
-| `vol.anon-mode.enable` (among others: `uid`, `routingTable`, `rulePriority`, `torVmAddress`, `transPort`, `sealOnHealthLoss`, `workstation.*`) | The `ip rule uidrange` selector, policy-routing unit, Tor readiness gate, `anonymous.target`, the isolation user, and the `anon-box` guest — several distant sections before the split, now one file that arms or disarms as a unit. |
-| `vol.ai-stack.ollama.exposeToTailscaleVm` | The `0.0.0.0` bind on Ollama AND the interface-scoped firewall exception on `vm-tailscale`. Flipping one switch moves both together, so they cannot drift apart. |
+| `vol.anon-mode.enable` (among others: `uid`, `routingTable`, `rulePriority`, `torVmAddress`, `transPort`, `sealOnHealthLoss`, `workstation.*`) | The `ip rule uidrange` selector, policy-routing unit, Tor readiness gate, `anonymous.target`, the isolation user, and both anonymity guests (`net-gate`, `anon-box`). They were several distant sections before the split and are now one module directory that arms or disarms as a unit; with `enable` off, the guests are not defined at all. |
+| `vol.ai-stack.ollama.exposeToTailscaleVm` (+ `tailnetClients`) | The `0.0.0.0` bind on Ollama AND the firewall exception on the tailscale tap, scoped to the listed tailnet addresses. Flipping one switch moves both together, so they cannot drift apart. |
+| `vol.tailscale-vm.*` (`tapInterface`, `subnet`, `hostAddress`, `guestAddress`) | The tailscale guest's addressing, read by `vms.nix`, the Ollama firewall rule and `phone-agent.pushBindAddr`. |
+| `vol.persistLuks.*` (`enable`, `uuid`, `stickGate.*`) | The initrd `cryptsetup` unit for `/persist`, and the USB-stick + key-chord unlock in front of it. See [Impermanence](impermanence/). |
 | `vol.audio.enable` (+ `pulseTools`, `parkedCards`) | PipeWire, WirePlumber and the pulse shim, plus the per-card `off` profile rules. Which ALSA cards to park is a machine fact, so it lives in `hosts/volnix.nix` while the mechanism stays in the module. See [Audio](../system/audio/). |
 | `vol.backup.enable` (among others: `repoFsUuid`, `usbQuirks`, `passwordFile`, `paths`, `exclude`, `pruneOpts`) | The udev rule keyed on the repo filesystem UUID, the mount units, the restic service and its mountpoint assertions — plugging the drive in is the whole trigger. See [Backup](../system/backup/). |
 

@@ -43,7 +43,7 @@ Makefile itself, so it can never drift from the real targets.
 > closure but leaves the OLD guest process running. A change to net-gate's guest config (torrc, the
 > NAT rules, anything under `microvm.vms.net-gate.config`) has no effect until `make gate-restart`
 > runs, and nothing warns you otherwise. `anon-box` is the exception: unit dependencies declared in
-> `anonymous-mode.nix` re-emit `restartIfChanged`, so it does restart on a plain `make switch`.
+> `anonymous-mode/default.nix` re-emit `restartIfChanged`, so it does restart on a plain `make switch`.
 
 ## Anonymous Mode
 
@@ -68,8 +68,8 @@ Targets for `vol.anon-mode` — the net-gate Tor VM plus a uid jail — and the
 | Target               | Action                                          |
 | :------------------- | :---------------------------------------------- |
 | `make sops-edit`     | `SOPS_AGE_KEY_FILE=$(SOPS_AGE_KEY_FILE) sops $(SOPS_FILE)` |
-| `make sops-edit-vm`  | Decrypt and edit VM secrets (host key only)      |
-| `make sops-rekey`    | `SOPS_AGE_KEY_FILE=$(SOPS_AGE_KEY_FILE) sops updatekeys $(SOPS_FILE)` |
+| `make sops-edit-vm`  | Decrypt and edit VM secrets (admin user + net-gate's own key) |
+| `make sops-rekey`    | Re-encrypt **both** secrets files against the keys in `.sops.yaml` |
 | `make sops-view`     | `SOPS_AGE_KEY_FILE=$(SOPS_AGE_KEY_FILE) sops -d $(SOPS_FILE)` |
 | `make sops-view-vm`  | Print decrypted VM secrets without an editor     |
 
@@ -90,7 +90,7 @@ code path:
 
 | Target               | Action                                          |
 | :------------------- | :--------------------------------------------- |
-| `make check`         | `nix flake check`, then separate `deadnix --fail .` and `statix check .` passes over the whole tree |
+| `make check`         | `nix flake check` (including the `anon-jail` VM test), then separate `deadnix --fail .` and `statix check .` passes over the whole tree |
 | `make fmt`           | Format all `.nix` with `nix fmt` (RFC 166 nixfmt) |
 | `make update`        | Update all flake inputs                          |
 | `make update-nixpkgs`| Update only `nixpkgs`                            |
@@ -100,11 +100,18 @@ code path:
 | `make comm`          | `git add .` followed by `git commit -m "$$cm"`   |
 | `make push`          | `git push` (wrapped in ssh-agent auth logic)     |
 
-`nix flake check` only evaluates git-tracked files under the flake's own `${self}`, so `make check`
-runs `deadnix` and `statix` again as separate passes over the whole tree to catch what that misses.
+`nix flake check` runs four checks: `formatting`, `lint`, `fish-syntax`, and `anon-jail`. The last
+is a NixOS VM test, so `make check` needs KVM and takes about a minute longer; CI builds
+`fish-syntax` but not `anon-jail` (see [Flake Inputs & Outputs](../reference/flake/)). The flake
+checks only see git-tracked files under the flake's own `${self}`, so `make check` runs `deadnix`
+and `statix` again as separate passes over the whole tree to catch what that misses.
 
 `make git` pushes, prompts for and makes a commit, then pushes again (`push` → `comm` → `push`), and
-on success hands off to `ci-poll` rather than blocking on `gh run watch`. `ci-poll` runs as a
+on success hands off to `ci-poll` rather than blocking on `gh run watch`. It passes `ci-poll` the
+sha of the upstream ref, not `HEAD`: memd can land a commit after the target returns, and the second
+`push` is a no-op when there was nothing to commit, so `HEAD` can name a commit GitHub never
+received. Watching that sha would show "queued" until the poller gave up, indistinguishable from a
+real queue. `ci-poll` runs as a
 background systemd user unit and feeds run progress into the starship prompt (see
 [Starship Prompt](starship/)) instead of holding the terminal. `make ci` is the foreground
 alternative — it locates the run for `HEAD` and attaches with `gh run watch`, printing the
@@ -132,7 +139,7 @@ The Makefile targets that used to wrap these were removed; call the scripts dire
 
 ## Documentation Wiki
 
-The wiki is its own repo now (`~/CodeRepo/blogs/wiki`), alongside the other sites. Its
+The wiki is its own repo now (`~/CodeRepo/sites/blogs/wiki`), alongside the other sites. Its
 serve/build/deploy targets live in that repo's own Makefile — this repo no longer wraps them.
 
 > [!TIP] Recommended flow
@@ -141,7 +148,7 @@ serve/build/deploy targets live in that repo's own Makefile — this repo no lon
 
 > [!IMPORTANT] Push before you switch
 > Every push to `main` that touches the closure builds it on CI and uploads the result to
-> `volnixos.cachix.org` — see [Binary Cache & CI](../ci-cache/). Running `make switch` *before* the
+> `volnixos.cachix.org` — see [Binary Cache & CI](ci-cache/). Running `make switch` *before* the
 > run goes green means building locally and then having CI rebuild the same paths. For anything
 > larger than a one-line change, and especially after `make update`, push first, wait for the run,
 > then switch: `make git` → `make switch`. `make git` already hands the wait off to the background

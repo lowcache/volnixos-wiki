@@ -10,6 +10,6 @@ toolchain, and the CI build that keeps the binary cache warm.
 
 - [Makefile & Operations](makefile/) — the canonical operations interface
 - [Fish Functions](fish/) — shell helpers
-- [Agent Toolchain](agents/) — memd, tether, agent-scaffold
+- [Agent Toolchain](agents/) — memd, tether, mcp-gateway
 - [Binary Cache & CI](ci-cache/) — the volnixos cachix cache and the build workflow that fills it
 - [Starship Prompt](starship/) — the shell prompt, including its CI build-progress segment

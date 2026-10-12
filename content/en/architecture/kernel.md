@@ -83,6 +83,4 @@ Three *other* `linux-cachyos-latest` derivations are built locally on every host
 (`-modules`, `-modules-shrunk`, and the host-specific `initrd-`). They are cheap and expected; only
 the kernel itself must be a download.
 
-> [!NOTE] Schedulers
-> `services.scx` (sched-ext, e.g. `scx_bpfland`) is wired in but currently disabled
-> (`enable = false`); the CachyOS kernel's default scheduler is in use.
+The CachyOS kernel's default scheduler is in use; `services.scx` (sched-ext) is not configured.

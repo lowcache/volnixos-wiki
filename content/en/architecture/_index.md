@@ -15,7 +15,7 @@ graph TD
     HW["Hardware<br/>Ryzen + AMD iGPU / NVIDIA RTX 4050"] --> K["CachyOS Kernel<br/>preempt=full · threadirqs"]
     K --> LB["Lanzaboote<br/>UEFI Secure Boot"]
     K --> IMP["Impermanence<br/>tmpfs root /"]
-    IMP --> P["/persist<br/>durable state"]
+    IMP --> P["/persist<br/>durable state · LUKS2"]
     LB --> NIX["NixOS · Lix daemon"]
     NIX --> HM["Home Manager<br/>user: lowcache"]
     HM --> NIRI["niri compositor<br/>greetd / tuigreet"]
@@ -44,10 +44,11 @@ The reference C++ Nix daemon is replaced by [**Lix**](https://lix.systems). Lix 
 | Repo structure   | `modules/` + `hosts/` split, typed options | [Repo Layout & Modules](modules/) · [Flake Templates](../reference/templates/) |
 | Boot & integrity | Lanzaboote UEFI Secure Boot                | [Boot & Secure Boot](boot/)          |
 | Statelessness    | `impermanence` + `/persist` + symlinks     | [Impermanence](impermanence/)        |
+| Encryption at rest | LUKS2 `/persist`, USB-stick + key-chord unlock (`vol.persistLuks`) | [Impermanence](impermanence/#persist-at-rest-luks2) |
 | Performance      | CachyOS kernel + sysctl tuning             | [Kernel & Performance](kernel/)      |
 | Secrets          | `sops-nix` + age                           | [Secrets](secrets/)                  |
 | Isolation        | `microvm.nix` gateways + QEMU/KVM Windows 11 VM (`nixos/windows-vm.nix`) | [Networking](../networking/) · [Virtualization](../system/virtualization/) |
-| Anonymous egress | `anon-box` guest behind `net-gate`, `vol.anon-mode.workstation` | [anon-box](../networking/anon-box/) |
+| Anonymous egress | uid jail + `anon-box` guest behind `net-gate`, `vol.anon-mode` | [Net-Gate](../networking/net-gate/) · [anon-box](../networking/anon-box/) |
 | Backup           | `restic` on drive plug-in (`nixos/modules/backup.nix`, `vol.backup`) | [Backup](../system/backup/) |
 | Audio            | PipeWire + WirePlumber (`nixos/modules/audio.nix`, `vol.audio`) | [Audio](../system/audio/) |
 | Phone            | Nix-on-Droid target + phone-agent MCP bridge | [Phone](../phone/)             |

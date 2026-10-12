@@ -198,7 +198,7 @@ Explicitly excluded, each for a stated reason:
 | :--- | :--- |
 | `github-copilot-cli` | No aarch64 build (evaluation error at this rev). |
 | `antigravity` | Evaluates on aarch64, but it is a desktop Electron IDE and there is no display server — ~3.2 GB of GTK/X11 closure for a binary that cannot launch. |
-| `memd`, `tether`, `agent-scaffold` | `home/scripts.nix` links these out of `/persist`, which does not exist on Android. They need a phone-local checkout first. |
+| `memd`, `tether` | `home/scripts.nix` links these out of `/persist`, which does not exist on Android. They need a phone-local checkout first. |
 | The whole `pkgs.llm-agents.*` set | At the 25.11 pin the cache hashes do not match, so Nix tries to build them natively under proot — which fails (see [backports](backports/)). |
 | `context7-mcp`, `mcp-server-fetch`, `mcp-server-sequential-thinking`, `llmfit` | Unstable-only; same proot build failure. |
 

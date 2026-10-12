@@ -10,8 +10,23 @@ itself — it reaches the tailnet by routing through this guest.
 
 ## Topology
 
-- Host tap `vm-tailscale` → `192.168.101.1/24`; guest → `192.168.101.2/24`.
-- Resources: `cloud-hypervisor`, 256 MB RAM, 1 vCPU, vsock CID `11`.
+The guest is declared in
+[`nixos/vms.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/vms.nix), which now holds only
+the MicroVM host settings and this guest; the anonymity guests moved to
+[`nixos/modules/anonymous-mode/guests.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/anonymous-mode/guests.nix).
+Its addresses are options under `vol.tailscale-vm`, and the defaults are what this host uses:
+
+| Option | Default |
+| :--- | :--- |
+| `tapInterface` | `vm-tailscale` |
+| `subnet` | `192.168.101.0/24` |
+| `hostAddress` | `192.168.101.1` (the guest's gateway and DNS, and where it DNATs tailnet ports) |
+| `guestAddress` | `192.168.101.2` (the host's next hop to the tailnet) |
+
+- Resources: `cloud-hypervisor`, 256 MB RAM, 1 vCPU, vsock CID `11`. The hypervisor, networkd,
+  the guest firewall and `random.trust_cpu=on` come from the shared guest base,
+  [`nixos/vm-guest-base.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/vm-guest-base.nix).
+  The guest no longer imports sops-nix.
 - `autostart = true` — the `microvm@tailscale` systemd unit brings the guest up at boot.
 - Host-side static route `100.64.0.0/10 via 192.168.101.2` sends tailnet traffic into the guest.
 - Tailscale state persists on the host at `/persist/var/lib/tailscale-vm`, shared into the guest over
@@ -52,24 +67,35 @@ auth. Node identity lives in the same persisted share and survives guest restart
 ## Publishing host services to the tailnet
 
 The guest SNATs host-originated traffic (`192.168.101.0/24`) onto its own tailnet IP so peers route
-replies back to the VM, and DNATs two ports inbound:
+replies back to the VM, and DNATs two ports inbound. The list is generated from the services' own
+port options, so changing either port moves the forward with it:
 
 ```nix
-networking.nat.forwardPorts = [
-  { proto = "tcp"; sourcePort = 11434; destination = "192.168.101.1:11434"; }
-  { proto = "tcp"; sourcePort = 8463;  destination = "192.168.101.1:8463"; }
-];
+forwardPorts =
+  map
+    (port: {
+      proto = "tcp";
+      sourcePort = port;
+      destination = "${cfg.hostAddress}:${toString port}";
+    })
+    [
+      config.services.ollama.port      # 11434
+      config.phone-agent.pushPort      # 8463
+    ];
 ```
 
 Inbound `tailscale0:11434` therefore reaches the **host's** [Ollama](../system/ai-stack/). The
 return path reuses the host's existing `100.64.0.0/10` route through this guest, so conntrack
 un-DNATs the replies. This is what lets the [phone agent](../phone/phone-agent/) reach laptop
-inference from the tailnet.
+inference from the tailnet. The host firewall admits `:11434` on the tap only from the addresses in
+`vol.ai-stack.ollama.tailnetClients` (see [AI Stack](../system/ai-stack/)).
 
 `:8463` has the same shape and serves the phone-agent push server, enabled by
 `phone-agent.enablePush` in [`nixos/hosts/volnix.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/hosts/volnix.nix).
 The phone *pulls* files from the laptop over it, so laptop → phone transfer stays phone-initiated
-and needs no inbound listener on the phone. See [phone agent](../phone/phone-agent/).
+and needs no inbound listener on the phone. Its host-side firewall exception lives in
+`nixos/phone-agent/push.nix` and follows `phone-agent.enablePush`; see
+[phone agent → Push](../phone/phone-agent/#push).
 
 ## Operating it
 

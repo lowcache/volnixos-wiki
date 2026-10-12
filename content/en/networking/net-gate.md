@@ -5,7 +5,10 @@ weight: 10
 ---
 
 `net-gate` is an autostarting MicroVM that runs a **Tor transparent proxy**, isolating
-anonymity-routed traffic in its own kernel and network namespace.
+anonymity-routed traffic in its own kernel and network namespace. It is declared, with its host
+plumbing, in
+[`nixos/modules/anonymous-mode/guests.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/anonymous-mode/guests.nix),
+and exists only when `vol.anon-mode.enable` is set.
 
 ## Topology
 
@@ -34,14 +37,18 @@ The guest mounts three `virtiofs` shares from the host:
 
 | Host path | Guest path | Purpose |
 | :--- | :--- | :--- |
-| `/persist/etc/ssh` | `/etc/ssh` | Host keys, so sops can decrypt inside the guest |
+| `/persist/var/lib/net-gate-ssh` | `/etc/ssh` | net-gate's **own** SSH host key (its sops identity), never the host's |
 | `/persist/var/lib/net-gate-tor` | `/var/lib/tor` | Tor's `DataDirectory` — consensus and entry guards |
 | `/persist/var/log/net-gate-journal` | `/var/log/journal` | Persistent guest journal |
 
 The last two are conditional on `vol.anon-mode.persistTorState` and
 `vol.anon-mode.persistGuestJournal`, both default `true`. Persisting Tor state buys entry-guard
 stability (fresh guards on every boot are an anonymity loss of their own) and a fast arm, at the
-cost of a recoverable guard set on unencrypted `/persist`. Persisting the journal is the only reason
+cost of a guard set and timestamps on disk: evidence of when this host used Tor, though not of what
+it reached. `/persist` is now LUKS2-encrypted (see
+[Impermanence](../../architecture/impermanence/#persist-at-rest-luks2)), so that record is readable
+only with the container unlocked; the option's own description in `options.nix` still calls
+`/persist` unencrypted. Persisting the journal is the only reason
 the VM is observable at all after boot — a dead `tor.service` once went unnoticed for four days.
 
 ## Tor service
@@ -82,8 +89,8 @@ services.tor = {
 > `ExecStartPre --verify-config` does not bind, so it passed, and the only symptom was a refused
 > connection that the wrappers misreported as "arm it with `anon-on`".
 
-`TransPort` and `DNSPort` each carry **two** listeners for the same reason in reverse: iptables
-`REDIRECT` rewrites the destination to the primary address of the interface the packet *arrived* on.
+`TransPort` and `DNSPort` each carry **two** listeners for the same reason in reverse: a
+`redirect` rewrites the destination to the primary address of the interface the packet *arrived* on.
 Host-jail traffic lands on `192.168.100.2`; workstation traffic lands on `192.168.102.1`. A listener
 bound only to the outer address serves the host and silently blackholes the workstation.
 
@@ -97,26 +104,36 @@ looked entirely correct. Any host whose LAN sits inside `172.16.0.0/12` hits the
 
 ## Transparent proxy rules
 
-The guest firewall opens TCP `9040` (TransPort) and `9050` (SOCKS5), plus UDP `5353` (DNSPort), and
-installs one generated rule set per client — the host jail and the workstation get byte-identical
-treatment because both come from the same function rather than two copies that can drift:
+The guest firewall opens TCP `9040` (TransPort) and `9050` (SOCKS5), plus UDP `5353` (DNSPort). The
+enforcement rules are an nftables table, `ip anon-gateway`, with one generated rule set per client.
+The host jail and the workstation get byte-identical treatment because both come from the same
+function rather than two copies that can drift:
 
-```nix
-iptables -A FORWARD -j DROP
-
-# per client, for src = 192.168.100.1 and src = 192.168.102.2
-iptables -t nat -A PREROUTING -s <src> -p udp --dport 53 -j REDIRECT --to-ports 5353
-iptables -t nat -A PREROUTING -s <src> -d <subnet>       -j RETURN
-iptables -t nat -A PREROUTING -s <src> -p tcp            -j REDIRECT --to-ports 9040
+```nft
+table ip anon-gateway {
+  chain prerouting {
+    type nat hook prerouting priority dstnat; policy accept;
+    # per client, for src = 192.168.100.1 (subnet 192.168.100.0/24)
+    #             and src = 192.168.102.2 (subnet 192.168.102.0/24)
+    ip saddr <src> udp dport 53 redirect to :5353
+    ip saddr <src> ip daddr <subnet> return
+    ip saddr <src> meta l4proto tcp redirect to :9040
+  }
+  chain forward {
+    type filter hook forward priority filter; policy drop;
+  }
+}
 ```
 
 Order matters: DNS first, so queries aimed at the guest itself are bent into Tor's DNSPort before
-the in-subnet `RETURN` can exempt them; then `RETURN` for the rest of the subnet, keeping the SOCKS
-interface directly usable; then every remaining TCP flow into TransPort.
+the in-subnet `return` can exempt them; then `return` for the rest of the subnet, keeping the SOCKS
+interface directly usable; then every remaining TCP flow into TransPort. nftables loads the table
+atomically with the rest of the ruleset, so a firewall reload never leaves a window without it.
+These rules replaced the earlier iptables `extraCommands`; the semantics did not change.
 
 > [!IMPORTANT] The guest terminates traffic, it never routes it
 > `boot.kernel.sysctl` pins `net.ipv4.ip_forward = 0` (plus the `all.forwarding` pair), and the
-> `FORWARD -j DROP` rule backs it so the invariant does not rest on a sysctl default. `REDIRECT`
+> `forward` chain's `policy drop` backs it so the invariant does not rest on a sysctl default. `redirect`
 > makes a packet local *before* the forwarding decision, so anything the rules do not rewrite — UDP
 > other than `:53`, ICMP, QUIC, anything Tor cannot carry — is dropped rather than forwarded. With
 > two legs this stops being belt-and-braces and becomes the mechanism that prevents the workstation
@@ -138,7 +155,7 @@ check VM reachability first, distinguishing "VM unreachable" from "VM up but `to
 The throwaway credentials on `tor-curl` and `tor-check` are stream isolation: a random
 `anon<rand><rand>:x` per invocation gives each call its own circuit.
 
-`anon-run` sets **no proxy variables**. Enforcement is the routing jail plus the guest's REDIRECT
+`anon-run` sets **no proxy variables**. Enforcement is the routing jail plus the guest's redirect
 rules, so the workload does not need to know Tor exists — and an application that ignores proxy
 settings cannot bypass it. The SOCKS interface remains available deliberately, through `tor-curl`
 and `tor-brave`.
@@ -146,7 +163,8 @@ and `tor-brave`.
 ## Anonymous mode (`vol.anon-mode`)
 
 Whole-process transparent routing is an option-typed module,
-[`nixos/modules/anonymous-mode.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/anonymous-mode.nix),
+[`nixos/modules/anonymous-mode/`](https://github.com/lowcache/volnixos/tree/main/nixos/modules/anonymous-mode)
+(`default.nix` for enforcement, `options.nix`, `scripts.nix`, `guests.nix`),
 enabled per host with `vol.anon-mode.enable`. Its core invariant: an anonymous workload either
 traverses the net-gate VM in a verified-ready state, or it has no network connectivity at all.
 Armed and disarmed with the Fish abbreviations `anon-on` / `anon-off`
@@ -234,9 +252,10 @@ Ad-hoc: use the per-app wrappers above, or point any SOCKS5-capable client at
 resolution. For a full kernel boundary rather than a uid boundary, use the
 [anon-box](anon-box/) workstation.
 
-> [!NOTE] WireGuard scaffold
-> `nixos/vms.nix` contains a commented `networking.wg-quick` block and a `wg_private_key` sops
-> placeholder for chaining an upstream VPN ahead of Tor. It is inactive until a key is added to
-> `nixos/vm-secrets.yaml`.
+> [!NOTE] Guest secrets
+> The commented `wg-quick` scaffold and its `wg_private_key` placeholder are gone. The guest's sops
+> wiring is kept: its own key, the sops module, and `nixos/vm-secrets.yaml`, which holds only a
+> `placeholder`. That way a guest secret can be added later without re-deriving the trust boundary.
+> See [Secrets](../../architecture/secrets/).
 
 Start the runner directly with `make run-netgate` (`nix run .#net-gate`).

@@ -5,30 +5,51 @@ weight: 40
 ---
 
 Secrets are managed with [`sops-nix`](https://github.com/Mic92/sops-nix) and **age** identities. The
-encrypted stores `nixos/host-secrets.yaml` (host) and `nixos/vm-secrets.yaml` (MicroVM guests, wired
-in `nixos/vms.nix`) are safe to commit; they are decrypted at activation into `/run/secrets/<name>`.
+encrypted stores `nixos/host-secrets.yaml` (host) and `nixos/vm-secrets.yaml` (the `net-gate` guest,
+wired in `nixos/modules/anonymous-mode/guests.nix`) are safe to commit; they are decrypted at
+activation into `/run/secrets/<name>`.
+
+The two files have different recipients, set in `nixos/.sops.yaml`:
+
+| File | Encrypted to |
+| :--- | :--- |
+| `host-secrets.yaml` | the admin user's age key + the host key |
+| `vm-secrets.yaml` | the admin user's age key + **net-gate's own key** |
+
+The host key is deliberately absent from `vm-secrets.yaml`, and net-gate's key opens nothing in
+`host-secrets.yaml`: the Tor-facing guest never holds a key that decrypts host secrets. Its key is
+minted once on the host by the `net-gate-ssh-key` unit into the root-only
+`/persist/var/lib/net-gate-ssh`, shared into the guest as `/etc/ssh` over virtiofs, and the unit
+logs the matching age recipient for `.sops.yaml`.
 
 > [!NOTE] `vm-secrets.yaml` currently holds only a placeholder
-> `nixos/vm-secrets.yaml` contains a single `placeholder` key — the file exists so the
-> host-key-only creation rule stays live, not because a guest secret is in use today. There is no
-> `nixos/secrets.yaml`; `nixos/.sops.yaml` still carries a legacy `secrets\.yaml$` rule, ordered
-> last because its regex is unanchored, kept only for transition.
+> `nixos/vm-secrets.yaml` contains a single `placeholder` key. The guest's sops wiring (own key,
+> sops module) is kept so a guest secret can be added later without re-deriving the trust boundary.
+> The legacy `secrets\.yaml$` rule is gone from `.sops.yaml`.
 
 ## Configuration
 
 From [`nixos/modules/secrets.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/secrets.nix):
 
 ```nix
+envSecrets = {
+  GEMINI_API_KEY.secret = "gemini_api_key";
+  OPENROUTER_API_KEY.secret = "openrouter_api_key";
+  PHONE_AGENT_TOKEN.secret = "phone_agent_token";
+  GH_TOKEN = {
+    secret = "gh_token";
+    wrap = pkgs.gh;
+  };
+};
+
 sops = {
   # relative to the module file — the yaml lives one level up, in nixos/
   defaultSopsFile = ../host-secrets.yaml;
   defaultSopsFormat = "yaml";
   age.sshKeyPaths = [ "/persist/etc/ssh/ssh_host_ed25519_key" ];
-  secrets = {
+  secrets = lib.mapAttrs' (_: s: lib.nameValuePair s.secret { owner = username; }) envSecrets // {
     user_password = { neededForUsers = true; };
     root_password = { neededForUsers = true; };
-    gemini_api_key = { owner = username; };
-    gh_token = { owner = username; };
     # …
   };
 };
@@ -43,12 +64,12 @@ Thirteen secrets are declared:
 | :------------------------------------- | :--------------------------------------------- | :----------------------------------------------- |
 | `user_password`                        | user creation (`neededForUsers`)               | `users.users.<user>.hashedPasswordFile`           |
 | `root_password`                        | user creation (`neededForUsers`)               | `users.users.root.hashedPasswordFile`             |
-| `gemini_api_key`                       | `/run/secrets/gemini_api_key`                  | exported as `GEMINI_API_KEY` in Fish              |
-| `gh_token`                             | `/run/secrets/gh_token`                        | exported as `GH_TOKEN` in Fish                    |
-| `apify_api_key`                        | `/run/secrets/apify_api_key`                   | exported as `APIFY_API_KEY` in Fish               |
-| `openrouter_api_key`                   | `/run/secrets/openrouter_api_key`              | exported as `OPENROUTER_API_KEY` in Fish          |
-| `twine_api_key`                        | `/run/secrets/twine_api_key`                   | exported as `TWINE_API_KEY` in Fish               |
-| `phone_agent_token`                    | `~/.config/phone-agent/token` (mode `0400`)    | exported as `PHONE_AGENT_TOKEN`; read by the client at that path |
+| `gemini_api_key`                       | `/run/secrets/gemini_api_key`                  | exported as `GEMINI_API_KEY` in every Fish shell  |
+| `openrouter_api_key`                   | `/run/secrets/openrouter_api_key`              | exported as `OPENROUTER_API_KEY` in every Fish shell |
+| `phone_agent_token`                    | `~/.config/phone-agent/token` (mode `0400`)    | exported as `PHONE_AGENT_TOKEN` in every Fish shell; read by the client at that path |
+| `gh_token`                             | `/run/secrets/gh_token`                        | `GH_TOKEN` for `gh` only, via a wrapper; `mcp-gateway`'s start script |
+| `apify_api_key`                        | `/run/secrets/apify_api_key`                   | file only, never exported                         |
+| `twine_api_key`                        | `/run/secrets/twine_api_key`                   | file only; memd's `release.sh` reads `TWINE_API_KEY_FILE` |
 | `buttondown_api_key_hotelevangelism`   | `/run/secrets/buttondown_api_key_hotelevangelism` | read by path via `BUTTONDOWN_API_KEY_FILE`, never exported |
 | `buttondown_api_key_volatiletestimony` | `/run/secrets/buttondown_api_key_volatiletestimony` | read by path via `BUTTONDOWN_API_KEY_FILE`, never exported |
 | `cloudflare_api_token`                 | `/run/secrets/cloudflare_api_token`            | `cat` into `CLOUDFLARE_API_TOKEN` for one `wrangler` invocation |
@@ -65,14 +86,23 @@ Two entries deviate from the default placement:
   service, and a user-readable copy would put the key to every snapshot behind a compromised
   session. See [Backup](../system/backup/).
 
-The API keys are exported at shell start in
-[`home/shell.nix`](https://github.com/lowcache/volnixos/blob/main/home/shell.nix) only if the runtime
-secret file is readable:
+### Environment exposure: `envSecrets`
 
-```fish
-test -r /run/secrets/gemini_api_key
-and set -gx GEMINI_API_KEY (cat /run/secrets/gemini_api_key)
-```
+The default is file-first: a secret is decrypted to a file and read from that path, never exported.
+Only a secret listed in the `envSecrets` attrset reaches an environment, and the one attrset
+generates both the sops entry and the exposure, so the two cannot drift apart:
+
+- **No `wrap`** — exported in every Fish shell. Reserved for keys several agent tools read
+  implicitly: `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `PHONE_AGENT_TOKEN`. The generated
+  `programs.fish.shellInit` line exports each one only if its runtime file is readable:
+
+  ```fish
+  test -r /run/secrets/gemini_api_key; and set -gx GEMINI_API_KEY (cat /run/secrets/gemini_api_key)
+  ```
+
+- **`wrap = pkg`** — exported only into that one command, through a same-named, high-priority
+  wrapper that shadows it on `PATH`. `GH_TOKEN` reaches `gh` this way and no other process. The
+  wrapper leaves an already-set variable alone.
 
 ## Keys
 
@@ -98,5 +128,7 @@ sops edit nixos/host-secrets.yaml      # `sops <file>` alone just prints usage
 > `.gitignore` excludes `nixos/*.yaml`. Agent credentials (e.g. `~/.gemini`) live in persisted
 > `$HOME` directories outside the repo, not under `dots/`.
 
-**Adding a secret:** add it to `nixos/host-secrets.yaml` → declare `sops.secrets.<name>` in
-`nixos/modules/secrets.nix` → consume it (e.g. export in `home/shell.nix`).
+**Adding a secret:** add it to `nixos/host-secrets.yaml`, then declare it in
+`nixos/modules/secrets.nix`. A secret read by path goes in `sops.secrets` with an `owner`; one a tool
+reads from the environment goes in `envSecrets`, with `wrap` unless several tools need it. Nothing is
+hand-written into `home/shell.nix` any more.

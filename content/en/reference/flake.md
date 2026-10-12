@@ -5,8 +5,11 @@ weight: 10
 ---
 
 [`flake.nix`](https://github.com/lowcache/volnixos/blob/main/flake.nix) tracks `nixpkgs` on
-`nixos-unstable` and composes the system from the inputs below. Most `*.nix` modules pin
-`inputs.nixpkgs.follows = "nixpkgs"` to keep a single nixpkgs in the closure.
+`nixos-unstable` and composes the system from the inputs below. Most inputs pin
+`inputs.nixpkgs.follows = "nixpkgs"` to keep a single nixpkgs in the closure. `nix-cachyos-kernel`
+deliberately does not: its `overlays.pinned` builds the kernel against its own nixpkgs so the store
+path matches the upstream binary cache, and following ours would turn every kernel into a source
+build.
 
 ## Inputs
 
@@ -21,9 +24,9 @@ weight: 10
 | `microvm`            | `astro/microvm.nix`                       | Isolated VM guests                     |
 | `noctalia`           | `github:noctalia-dev/noctalia`           | Noctalia v5 desktop shell              |
 | `sops-nix`           | `Mic92/sops-nix`                          | Encrypted secrets                      |
-| `volinit`            | `lowcache/volinit`                        | Shell welcome banner                   |
-| `nur`                | `nix-community/NUR`                       | Community overlay                      |
+| `volinit`            | `lowcache/volinit/rewrite/go-cockpit`     | Terminal welcome banner (Fish runs it when on `PATH`) |
 | `llm-agents`         | `numtide/llm-agents.nix`                  | AI agent tooling overlay               |
+| `nix-index-database` | `nix-community/nix-index-database`        | Prebuilt weekly nix-index database; also enables `comma` |
 | `memd`               | `lowcache/memd`                           | Project-memory daemon (HM module)      |
 | `nixpkgs-droid`      | `nixos/nixpkgs/nixos-25.11`               | Phone package set (glibc 2.40 pin)     |
 | `home-manager-droid` | `nix-community/home-manager/release-25.11`| Phone user environment                 |
@@ -39,15 +42,17 @@ There is no top-level `nixpkgs.overlays`. The host list lives in an inline modul
 ```nix
 nixpkgs.overlays = [
   inputs.nix-cachyos-kernel.overlays.pinned
-  inputs.nur.overlays.default
   inputs.llm-agents.overlays.shared-nixpkgs
-  (import ./nixos/overlays/brave.nix)
-  (import ./nixos/overlays/pandas-stubs.nix)
 ];
 ```
 
-A third overlay file, `nixos/overlays/ollama.nix`, pinned `ollama-cuda` and was deleted once CI
-stayed green without it; a tombstone comment marks where it sat.
+There are no local overlay files any more. `brave.nix` went because nixpkgs' `brave` now takes
+`commandLineArgs` natively, and `pandas-stubs.nix` because upstream `pandas-stubs` is cached again
+(both 2026-10-10). `ollama.nix` had gone earlier.
+
+The same module list also sets `system.configurationRevision` to the flake's git revision (reported
+by `nixos-version --configuration-revision`, which volinit's ticker reads) and imports
+`nix-index-database` with `programs.nix-index-database.comma.enable = true`.
 
 The phone target does not share this list. `nixOnDroidConfigurations.default` imports its own `pkgs`
 from `nixpkgs-droid` with a separate set — `inputs.nix-on-droid.overlays.default`,
@@ -76,6 +81,8 @@ graph TD
 | `formatter.x86_64-linux`                | `nixfmt-tree` wrapper (`nix fmt`)             |
 | `checks.x86_64-linux.formatting`        | `nixfmt --check` gate for flake source        |
 | `checks.x86_64-linux.lint`              | `statix` & `deadnix` gate for flake source    |
+| `checks.x86_64-linux.fish-syntax`       | `fish --no-execute` over every Fish file Home Manager generates |
+| `checks.x86_64-linux.anon-jail`         | NixOS VM test of the anonymous-mode jail (`nixos/tests/anon-jail.nix`) |
 | `nixOnDroidConfigurations.default`      | Nix-on-Droid phone target (`aarch64-linux`), built on-device |
 | `templates.*`                           | Project scaffolds for `nix flake init -t`     |
 
@@ -92,12 +99,12 @@ deliberately no `templates.default`, so the language has to be named:
 nix flake init -t ~/.nix-config#ruby
 ```
 
-See [Project Templates](../templates/) for what each one scaffolds.
+See [Project Templates](templates/) for what each one scaffolds.
 
 ## Maintenance
 
 ```bash
-make check            # nix flake check, then tree-wide deadnix + statix
+make check            # nix flake check (incl. the anon-jail VM test), then tree-wide deadnix + statix
 make fmt              # nix fmt
 make update           # nix flake update (all inputs)
 make update-nixpkgs   # nix flake update nixpkgs

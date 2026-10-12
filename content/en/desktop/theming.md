@@ -30,6 +30,24 @@ That table covers the templates detailed individually on this page. The full set
 That is wider coverage than this host ever built by hand, which is the whole
 reason the local engine below stopped being run.
 
+## Pointer cursor
+
+The cursor is not chosen in Nix. It is picked in Noctalia's Cursor panel (a control-centre tile),
+provided by the `vn1k/cursor` community plugin, which writes the cursor settings itself: GTK's
+`settings.ini`, the dconf cursor keys, `~/.icons/default`, and
+`~/.config/environment.d/90-xcursor.conf`. Home Manager only installs the themes.
+[`home/default.nix`](https://github.com/lowcache/volnixos/blob/main/home/default.nix) installs
+`bibata-cursors-translucent` and links `Bibata_Ghost`, `Bibata_Spirit` and `Bibata_Tinted` into
+`~/.icons`, because the plugin scans only `~/.local/share/icons`, `~/.icons` and `/usr/share/icons`.
+The default is `Bibata_Ghost`. (The old `home.pointerCursor` named `Bibata-Modern-Translucent`, a
+theme that package never shipped.)
+
+To keep Home Manager from fighting the plugin, `gtk.gtk3.enable` and `gtk.gtk4.enable` are `false`,
+so HM writes neither `settings.ini` nor the dconf cursor keys. The GTK theme (`adw-gtk3-dark`) is
+still set through `dconf.settings`, and `home.activation.seedGtkSettings` writes a first-boot
+`settings.ini` only if none exists. The files the plugin writes are persisted in
+`home/persist.nix` (see [Impermanence](../../architecture/impermanence/)).
+
 ## The color-engine is dormant, and destructive if run
 
 `dots/color-engine/` still exists in the config repo and is not part of the
@@ -74,7 +92,7 @@ including a 16-colour terminal set from two hex arguments.
 
 `~/.config/kitty` is an out-of-store symlink to
 [`dots/kitty`](https://github.com/lowcache/volnixos/tree/main/dots/kitty)
-(`home/persist.nix:19`), not a Home Manager generated file. `kitty.conf:68`
+(`home/persist.nix:21`), not a Home Manager generated file. `kitty.conf:69`
 does `include themes/noctalia.conf` — kitty is one of Noctalia's builtin
 template targets (`kitty` in `theme.templates.builtin_ids`, see above), not
 themed independently of the desktop:
@@ -93,7 +111,7 @@ The prompt runs on `palette = "m3"`, driven by the repo-tracked
 `dots/noctalia/templates/starship-m3/` template rather than Noctalia's builtin
 `starship` template — which reads only the 8 terminal ANSI hues and was
 removed from `theme.templates.builtin_ids` because this template supersedes
-it. See [Starship Prompt]( ../../tooling/starship/) for the rest.
+it. See [Starship Prompt](../tooling/starship/) for the rest.
 
 ## Fonts
 

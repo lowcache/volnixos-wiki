@@ -87,7 +87,7 @@ The plugin lives at `~/Storage/krita-master/krita/pykrita/font_gallery/`, reache
 
 The G'MIC filter tree segfaults on the first right-click or stylus long-press. The bug is in the plugin rather than in Krita: `GmicQt::FiltersView::onCustomContextMenu` calls `deleteLater()` on context-menu pointers that the constructor leaves as `nullptr`, so any context-menu event dereferences null.
 
-[`home/pkgs.nix`](https://github.com/lowcache/volnixos/blob/main/home/pkgs.nix) defines `krita-plugin-gmic-patched` with null guards around both calls, and `krita-wrapped` overrides `pkgs.krita` so the patched plugin is the one bundled. The override happens inside the wrapper to avoid a `buildEnv` collision, since two copies of `krita_gmic_qt.so` cannot coexist.
+[`home/pkgs.nix`](https://github.com/lowcache/volnixos/blob/main/home/pkgs.nix) defines `krita-patched` as `pkgs.krita.override { krita-plugin-gmic = <patched>; }`, where the patched plugin adds null guards around both calls. The override happens inside `pkgs.krita`, itself a `symlinkJoin` over its binary plugins, so the patched copy is the only `krita_gmic_qt.so` and there is no `buildEnv` collision.
 
 This patch is independent of Krita's version. Updating Krita will not retire it, because the defect is in a separate package.
 
@@ -105,8 +105,14 @@ One API detail wastes time otherwise: `createNode(name, "vectorlayer")` returns 
 
 ## Version status
 
-The installed version is 6.0.2.1. Krita 6.0.3 was released on 29 July 2026 with four further text fixes, covering a crash when deleting a text shape, vertical caret metrics, font family sorting, and font name deduplication.
+The locked flake now evaluates Krita to 6.0.4, which includes the four text fixes 6.0.3 shipped on
+29 July 2026 (a crash when deleting a text shape, vertical caret metrics, font family sorting, and
+font name deduplication). The measurements on this page were made on 6.0.2.1 and have not been
+re-run on 6.0.4.
 
-None of those are defects hit here, and nixpkgs has not packaged it. PR [#546550](https://github.com/NixOS/nixpkgs/pull/546550) is open but unmerged, so the locked flake still evaluates Krita to 6.0.2.1. There is nothing to gain from forcing the upgrade yet.
-
-The Hyprland-era XWayland *behavior* is gone, but the wrapper itself is still there: [`home/pkgs.nix:53-57`](https://github.com/lowcache/volnixos/blob/main/home/pkgs.nix) now sets `QT_QPA_PLATFORM wayland` instead of `xcb`, and the wrapper survives to bundle the patched G'MIC plugin rather than to pick a Qt platform. Removing it outright is a live TODO in that file (`:33-36`), not yet settled. Krita runs as a native Wayland client under niri either way, as recorded in [Troubleshooting](../../troubleshooting/) and [GPU](../../system/gpu/).
+The wrapper is gone. Krita used to be repackaged with `symlinkJoin` + `wrapProgram`, first to force
+`xcb` under Hyprland and later only to set `QT_QPA_PLATFORM=wayland` and carry the patched G'MIC.
+Now Krita gets `QT_QPA_PLATFORM=wayland` from the session environment in
+[`home/default.nix`](https://github.com/lowcache/volnixos/blob/main/home/default.nix), and the only
+repackaging left is the G'MIC override. Krita runs as a native Wayland client under niri, as
+recorded in [Troubleshooting](../../troubleshooting/) and [GPU](../../system/gpu/).

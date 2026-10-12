@@ -46,7 +46,7 @@ graph LR
 - **Phone Agent** runs *on the laptop*, calling out to the phone for sensors and ingested files —
   that direction stays phone → laptop. A push server now lets files move laptop → phone too, but the
   laptop never pushes unsolicited: it serves one read-only, token-gated directory (`~/push`) on the
-  tailnet, and the phone pulls from it (`nixos/hosts/volnix.nix:98-102`). See
+  tailnet, and the phone pulls from it (`nixos/hosts/volnix.nix:114-122`). See
   [Phone Agent](phone-agent/) for the details.
 
 ## Shared ground

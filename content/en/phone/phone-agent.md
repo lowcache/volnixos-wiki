@@ -51,6 +51,7 @@ store. The module asserts `tokenFile` is set.
 | Option | Type | Default | Purpose |
 | :--- | :--- | :--- | :--- |
 | `enable` | `bool` | `false` | Master switch for the subsystem. |
+| `user` | `str` | the flake's `username` | The one user whose `systemd --user` manager runs the units. |
 | `phoneTailscaleIP` | `str` | *(host-specific)* | Tailscale IP of the phone MCP server. |
 | `port` | `port` | `8462` | Phone MCP server port. |
 | `tokenFile` | `str` | *(required)* | Path to the sops bearer-token file. |
@@ -64,8 +65,8 @@ store. The module asserts `tokenFile` is set.
 | `allowUnlock` | `bool` | `false` | Experimental; logs intent only (see below). |
 | `enablePush` | `bool` | `false` | Serve `pushDir` on the tailnet for the phone to pull. |
 | `pushDir` | `str` | `/home/lowcache/push` | The one directory served. Nothing else is reachable. |
-| `pushPort` | `port` | `8463` | Port on `pushBindAddr`; needs a matching `forwardPorts` entry in `vms.nix`. |
-| `pushBindAddr` | `str` | `192.168.101.1` | The MicroVM tap address — **never** `0.0.0.0`. |
+| `pushPort` | `port` | `8463` | Port on `pushBindAddr`; the module opens it on the tailscale tap, and the tailscale guest forwards it. |
+| `pushBindAddr` | `str` | `config.vol.tailscale-vm.hostAddress` (`192.168.101.1`) | The MicroVM tap address — **never** `0.0.0.0`. |
 
 ## Services
 
@@ -76,18 +77,31 @@ The five capabilities do **not** map one-to-one onto services. What is actually 
 | `phone-ingest-sync` | user, oneshot | `enableIngestSync` | `phone-ingest-sync.timer` |
 | `phone-ingest-sync.timer` | user, timer | `enableIngestSync` | `OnBootSec=2min`, `OnUnitActiveSec=2min` |
 | `phone-ingest-watcher` | user, path | `enableIngestWatcher` | `<ingestDir>/staged/*.json` appears |
-| `phone-proximity-daemon` | user, long-running | `enableProximityLock` | starts with the session |
+| `phone-proximity-daemon` | user, long-running | `enableProximityLock` | `wantedBy = graphical-session.target` |
 | `phone-network-routing` | user, oneshot | `enableNetworkRouting` | **none — see below** |
 | `phone-push-server` | user, long-running | `enablePush` | `wantedBy = default.target` |
 
 The **MCP transport** has no service of its own and no independent toggle: it is the `phone-agent`
 CLI plus the shared `nixos/phone-agent/scripts/phone-mcp-call.sh` dispatcher, governed globally by
-`enable`.
+`enable`. [`nixos/phone-agent/client.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/phone-agent/client.nix)
+wraps that dispatcher once, as `phone-call`, with the phone's address and token baked in. Every unit
+and the CLI call the phone through it (`client.call`), and the health checks build their URL from
+`client.url`, so the address and token are declared in one place rather than copied into each unit.
 
-Each service gets a pinned `PATH` containing only what it needs. The MCP-calling units get `curl`,
-`coreutils` and `bash` (plus `niri` for proximity); `phone-push-server` gets `coreutils` alone,
-because it does nothing but `exec` a Python interpreter. Tools used at only one call site — `jq`,
-`util-linux`'s `logger`, `python3` — are referenced by store path instead of being put on `PATH`.
+Units are installed into `/etc/systemd/user`, so every user manager would start them, greetd's
+`greeter` included. Each unit except `phone-network-routing` therefore carries `ConditionUser = <user>`.
+
+Each script gets a `PATH` holding only what it calls:
+
+| Script | `PATH` |
+| :--- | :--- |
+| `phone-call` (shared client) | `bash`, `curl`, `coreutils`, `jq` |
+| `phone-ingest-sync` | `curl`, `coreutils`, `jq` |
+| `phone-ingest-watcher` | `jq`, `coreutils` |
+| `phone-proximity-daemon` | `jq`, `curl`, `coreutils`, `niri`, `util-linux` (`logger`) |
+| `phone-network-routing` | `jq`, `coreutils` |
+| `phone-push-server` | `python3`, `coreutils` |
+| `phone-agent` CLI | `jq` |
 
 ## The `phone-agent` CLI
 
@@ -120,8 +134,24 @@ the model: it is a read-only HTTP server bound to the MicroVM tap, serving exact
 initiates — **the phone pulls**. As `nixos/hosts/volnix.nix` puts it, "the phone pulls from `~/push`,
 the laptop never pushes unsolicited."
 
-The scope is deliberately one directory. `pushBindAddr` is the tap address and **never** `0.0.0.0`;
-reaching it from the tailnet requires the matching `:8463` `forwardPorts` entry in `vms.nix`.
+The scope is deliberately one directory. `pushBindAddr` is the tap address and **never** `0.0.0.0`.
+Reaching it from the tailnet takes two pieces, and both now follow `pushPort` with nothing to edit
+by hand:
+
+1. the tailscale guest's `forwardPorts` DNAT, which `vms.nix` generates from `services.ollama.port`
+   and `phone-agent.pushPort` (see [Tailscale](../networking/tailscale/));
+2. a host firewall exception on the tailscale tap, which `push.nix` declares itself when
+   `enablePush` is set:
+
+```nix
+networking.firewall.interfaces.${config.vol.tailscale-vm.tapInterface}.allowedTCPPorts = [
+  cfg.pushPort
+];
+```
+
+Before 2026-09-19 the second piece was missing. The host firewall (whose `trustedInterfaces` are only
+`lo` and `waydroid0`) refused the DNAT'd connections, so push was unreachable from the tailnet even
+with `enablePush = true`.
 
 Because it listens on a network, the unit is hardened like anything else exposed: `ProtectSystem =
 "strict"`, `ProtectHome = "read-only"`, `RestrictAddressFamilies = [ "AF_INET" ]`,
@@ -135,27 +165,58 @@ uses `hmac.compare_digest`, since a plain `==` leaks the token a byte at a time.
 
 ## Ingest
 
-`phone-ingest-sync` runs 2 minutes after boot and every 2 minutes thereafter. For each file listed
-by `phone.ingest.list` that is not already present locally, it calls `phone.ingest.fetch`,
-base64-decodes the payload to `<ingestDir>/staged/.tmp.<name>`, computes its sha256, and moves it to
-`<ingestDir>/staged/<name>` only if the hash matches the listing. On mismatch it removes the
-temporary file and logs `sha mismatch for <name>` to stderr.
+`phone-ingest-sync` runs 2 minutes after boot and every 2 minutes thereafter. The phone retires a
+file only after the laptop holds a verified copy:
 
-> [!CAUTION] Deletion happens before verification
-> `phone.ingest.fetch` is called with `delete_after:true`, so the **phone-side copy is deleted as
-> part of the fetch** — before the payload is decoded and before its sha256 is checked. If
-> verification then fails, the local temp file is removed too and the file exists in neither
-> place. A corrupted transfer is unrecoverable, not retryable.
+1. For each file listed by `phone.ingest.list` (up to 50) that is not already present locally, call
+   `phone.ingest.fetch` with `delete_after:false`. The phone keeps its copy in `~/ingest/staged`.
+2. Base64-decode the payload to `<ingestDir>/staged/.tmp.<name>` and compare its sha256 with the
+   listing. On a match, move it to `<ingestDir>/staged/<name>`.
+3. Call `phone.ingest.fetch` again with `delete_after:true`. That *moves* the phone's copy to
+   `~/ingest/staged-delivered`; it does not delete it.
+
+The cost is that **every file crosses the link twice**. The phone server exposes only `list` and
+`fetch`, so retiring a file means a second fetch. A phone-side acknowledgement tool would make it one
+transfer; none exists.
+
+Failures are per file. A fetch error, a hash mismatch or a failed retire is logged to stderr
+(`fetch failed for <name>`, `sha mismatch for <name>`, `retire failed for <name>`), counted, and
+skipped, so the rest of the batch still runs. At the end the unit exits 1 with
+`N file(s) failed; will retry next run`, and shows as failed in `systemctl --user status`. Nothing
+is lost: an unverified file is still in the phone's `staged` and is retried on the next run, and a
+file verified on an earlier run whose retire failed is retired on the next one.
+
+Two more cases:
+
+- A delivered file re-staged under the same name with different content is logged as
+  `name collision for <name>; left on phone`. It is not counted as a failure and the local copy is
+  never overwritten.
+- File names come from the phone and become paths on the laptop, so an empty name, `.`, `..`, or
+  anything containing `/` is refused (`refusing unsafe name from phone`) and counted as a failure.
+
+The phone server reports tool errors as HTTP 200 with `{"error": …}` in the result text, not as MCP
+`isError`. The script therefore counts a fetch as successful only if the reply carries
+`content_b64` (first fetch) or `sha256` (retire). An unreachable phone is still a silent no-op: the
+health check fails and the unit exits 0.
+
+> [!NOTE] Before 2026-09-19
+> The first fetch used `delete_after:true`, so the phone gave up its copy before the laptop had
+> verified anything. Files stranded that way may still be in the phone's `~/ingest/staged-delivered`;
+> moving one back to `staged` gets it re-synced.
 
 `phone-ingest-watcher` is a systemd path unit watching `<ingestDir>/staged/*.json`; new files trigger
 `scripts/ingest-watcher.sh` to process them.
 
 ## Proximity lock
 
-`phone-proximity-daemon` polls the phone's IMU every `proximityIntervalSec`. When the inferred motion
-state transitions from `on_desk`/`stationary` to `walking`/`in_pocket`, it runs
-`niri msg action lock-screen` and records the event to syslog under the tag `phone-proximity`. The
-unit restarts on failure after 10 seconds.
+`phone-proximity-daemon` polls the phone's IMU every `proximityIntervalSec`, skipping the read when
+the health check fails. When the inferred motion state transitions from `on_desk`/`stationary` to
+`walking`/`in_pocket`, it runs `niri msg action lock-screen` and records the event to syslog under
+the tag `phone-proximity`. A failed read does not overwrite the previous state, otherwise
+`on_desk → unknown → walking` would never lock. The unit restarts on failure after 10 seconds.
+
+It is wanted by `graphical-session.target`, not `default.target`: `default.target` starts before the
+compositor exports `NIRI_SOCKET`/`WAYLAND_DISPLAY`, and `niri msg` cannot lock without them.
 
 > [!WARNING] Lock only — no auto-unlock
 > There is no safe programmatic unlock, so the daemon never unlocks. `allowUnlock` is experimental

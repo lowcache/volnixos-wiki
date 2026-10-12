@@ -11,17 +11,25 @@ compositor-agnostic. Noctalia completely replaces the previous QML-based shell, 
 ## Configuration & Management
 
 Noctalia is packaged via the `noctalia` flake input and enabled in `home/shell.nix:22`
-(`programs.noctalia.enable`). The installed binary currently reports `noctalia v5.0.1`;
-the flake input (`flake.nix:28`) tracks `github:noctalia-dev/noctalia` with no `?ref=`
+(`programs.noctalia.enable`). The installed binary currently reports `noctalia v5.1.0`;
+the flake input (`flake.nix:34`) tracks `github:noctalia-dev/noctalia` with no `?ref=`
 pin, so that version drifts on `nix flake update` rather than staying put.
 
 > [!NOTE]
 > The configuration is maintained as a live out-of-store symlink at `~/.config/noctalia` pointing to `dots/noctalia`. Home Manager explicitly does not write files here.
 
+niri does not start `noctalia` directly. `dots/niri/config.kdl` spawns `noctalia-session`, a wrapper
+defined in [`home/shell.nix`](https://github.com/lowcache/volnixos/blob/main/home/shell.nix) that
+prepends `libstdc++` and `zlib` to `LD_LIBRARY_PATH` and then execs Noctalia. The
+`wallpaper_depth` plugin builds a venv of manylinux wheels whose `libstdc++.so.6` and `libz.so.1`
+resolve nowhere on NixOS. `nix-ld` cannot cover them, because the venv interpreter is a nixpkgs
+CPython rather than a foreign binary, and the plugin execs that Python directly, so the libraries
+have to be inherited from the shell's own environment.
+
 ## Core Features
 
 Noctalia serves as the hub for the desktop's visual and interactive elements:
-- **Bottom + Side Bar:** A bottom bar and a right-hand side bar (`order = ["bottom", "side"]` in `settings.toml:15`) that together frame the workspace.
+- **Bottom + Side Bar:** A bottom bar and a right-hand side bar (`order = ["bottom", "side"]` in `settings.toml:16`) that together frame the workspace.
 - **Lock & Idle:** Robust lock/idle handling, providing the visual lock screen interface.
 - **Media & Brightness:** Hardware control routing via `noctalia msg` IPC commands.
 - **Wallpaper Picker:** Native desktop wallpaper integration.
@@ -34,11 +42,11 @@ panels rather than a single wrap-around frame:
   system monitors (cpu/cpu temp, gpu/gpu temp, RAM, SWAP, /persist, and Download graph)
   an off-centered clock & weather, tray, network, volume, battery, bluetooth and session
   widgets.
-- **Side Bar** (`[bar.side]`, `position = "right"`, `:99`): Full height, housing an audio
+- **Side Bar** (`[bar.side]`, `position = "right"`, `:88`): Full height, housing an audio
   visualizer, workspaces, and the chosen plugins (oversized claude-companion pulse,
   calculator, clipboard, screenshot, prettier bound keys display, nix monitor, notes,
   and llama manager).
-- **Dock:** A separate `position = "left"` panel (`:257`) — the app dock, not a bar.
+- **Dock:** A separate `position = "left"` panel (`:187`) — the app dock, not a bar.
 - **Desktop:** An audio visualizer widget spans the length of the side bar at the edge
   that gives the effect of audio bars extending from the bar onto the desktop for when
   a window isn't at full screen.
@@ -60,5 +68,5 @@ follows without any glue.
 The custom Python color-engine in `dots/color-engine/` is not part of this
 pipeline — Noctalia writes these natively — and the `make theme-apply` target
 that used to drive it no longer exists. The engine is dormant rather than
-harmless if run directly; see [Theming](../theming/) for what replaced it and
+harmless if run directly; see [Theming](theming/) for what replaced it and
 the hazard of running it against the live config.

@@ -11,7 +11,7 @@ The session is managed by the Universal Wayland Session Manager (UWSM). Login is
 
 ## X11 Support
 
-`xwayland-satellite` is packaged for legacy X11 app support (`home/pkgs.nix:72`), but
+`xwayland-satellite` is packaged for legacy X11 app support (`home/pkgs.nix:51`), but
 it is not wired to autostart — there is no systemd unit and no `spawn-at-startup`
 for it in `config.kdl`. It is available on `$PATH` for Flatpak Qt5 apps (using the
 xcb plugin) and xcb-only AppImages, but nothing launches it automatically.
@@ -59,8 +59,9 @@ Media and brightness keys are routed via `noctalia msg` to integrate with the No
 | Send column to workspace N | `Mod` + `Alt` + `1`..`9` |
 | Pull/push window into adjacent column | `Mod` + `Ctrl` + `Left` / `Right` (`consume-or-expel-window`) |
 
-`Page_Up` / `Page_Down` are left unbound (`config.kdl:166-168`): on this ASUS chassis
-those keys sit on the Fn layer and trigger Fn-lock, which interferes with `Mod+` binds.
+`Page_Up` / `Page_Down` are left unbound (`config.kdl:168-170`): on this ASUS chassis
+those keys sit on the Fn layer, and hitting the Fn sequence in the wrong order can toggle the
+Super-key lock, which silently kills every `Mod+` bind.
 
 ### Other Notable Binds
 

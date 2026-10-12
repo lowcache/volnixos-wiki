@@ -58,7 +58,8 @@ $ curl -so /dev/null -w '%{http_code}\n' https://cache.nixos.org/p7psxbs6gpxaixf
 `cache.nixos.org` is not listed because Nix always consults it in addition to the configured set.
 
 The public key for `volnixos.cachix.org` is in `nix-settings.nix` in plain text; that is what a
-public key is for. The push side needs `CACHIX_AUTH_TOKEN`, a repo secret.
+public key is for. The push side needs `CACHIX_AUTH_TOKEN`, a repo secret: a cache-scoped read/write
+token from the `volnixos` cache's settings, which expires.
 
 ## Consuming the cache from another machine
 
@@ -88,13 +89,16 @@ nix build --extra-substituters https://volnixos.cachix.org \
 | Free disk space | Removes ~25 GB of preinstalled runner toolchains; the closure does not fit otherwise |
 | `install-nix-action` | Installs Nix, wires `access-tokens` for GitHub-hosted flake inputs |
 | `cachix-action` | Authenticates to `volnixos`, and pushes every newly built path on exit |
+| Checks (fmt + lint) | `formatting`, `lint` and `fish-syntax`. Runs first, so a lint failure costs a minute rather than the whole build. `anon-jail` is a VM test and runs only in `make check` (no KVM on the runner) |
 | **Assert the kernel is a cache hit** | Dry-run gate, see below |
-| Build volnix toplevel | The system closure; run first so a host-breaking change fails fast |
+| Build volnix toplevel | The system closure |
 | Build MicroVM runners | `net-gate` and `tailscale-vm` |
-| Checks (fmt + lint) | The same formatting/statix/deadnix gate as `make check` |
 
-A green run on a warm cache, measured on run `33043734080` — a historical measurement from before
-the job's timeout was raised for CUDA builds (see below), and not representative of a CUDA build:
+Every third-party action is pinned to a full commit SHA, with the release tag kept as a comment
+(`actions/checkout@11d5960… # v4`), so a moved tag cannot change what runs.
+
+A green run on a warm cache, measured on run `33043734080`. It is a historical measurement, from
+before the checks moved to the front of the job, and is not representative of a CUDA build:
 
 | Step | Time |
 | :--- | ---: |
@@ -132,9 +136,13 @@ An unanchored `linux-cachyos.*\.drv` matches the first two; `linux-cachyos-lates
 without the `/nix/store/<hash>-` prefix still matches the **initrd** as a substring. Both mistakes
 failed real builds before the anchored form stuck.
 
-`timeout-minutes: 250` backs the same assumption from the other side: if the guard is ever bypassed,
-the job dies at that limit rather than burning six hours of runner time to reach the same answer. It
-started at 90 minutes and was raised twice — to 150, then to 250 — to give CUDA builds enough room.
+`timeout-minutes` is now `360`, which is GitHub's own ceiling: hosted runners terminate any job at
+six hours regardless of the setting, so it is a limit, not a budget. It used to be short (90, then
+150, then 250 minutes) to fail fast if a substituter regressed and the kernel fell back to a source
+build. The assertion above catches exactly that in about a minute, so a short timeout only capped
+legitimate work. Run `35299186456` showed it: after a 623-commit nixpkgs jump, roughly 1,854 paths
+had to be built from source, and the job was killed at 250 minutes while generating the last
+systemd units, minutes from done.
 
 > [!TIP]
 > If this step fails, read the `nix config show substituters` output it prints first. A missing

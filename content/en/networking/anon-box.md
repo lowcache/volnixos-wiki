@@ -5,10 +5,13 @@ weight: 30
 ---
 
 `anon-box` is the workload half of anonymous mode. It is a MicroVM with one route — the
-[net-gate](net-gate/) inner leg — no host-reachable address, and no persistent state. It is declared
-in [`nixos/vms.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/vms.nix) and switched on by
+[net-gate](net-gate/) inner leg — no host-reachable address, and no persistent state. It is
+declared in
+[`nixos/modules/anonymous-mode/guests.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/anonymous-mode/guests.nix)
+alongside net-gate, and like net-gate it exists only when `vol.anon-mode.enable` is set. Its
+addressing (`address`, `gatewayAddress`, `bridge`, `vsockCid`, the vsock ports) lives under
 `vol.anon-mode.workstation` in
-[`nixos/modules/anonymous-mode.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/anonymous-mode.nix).
+[`nixos/modules/anonymous-mode/options.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/anonymous-mode/options.nix).
 
 ## What it buys over `anon-run`
 
@@ -133,10 +136,10 @@ make anon-guest-logs     # guest-side logs
 make anon-disarm         # tear the whole thing down
 ```
 
-The guest's toolset is declared in `nixos/vms.nix` under `microvm.vms.anon-box`.
+The guest's toolset is declared in `nixos/modules/anonymous-mode/guests.nix` under `microvm.vms.anon-box`.
 
 > [!NOTE] Unlike net-gate, anon-box restarts on a plain `make switch`
-> Declaring unit dependencies on it in `anonymous-mode.nix` re-emits `restartIfChanged`, which
+> Declaring unit dependencies on it in `anonymous-mode/default.nix` re-emits `restartIfChanged`, which
 > overrides the `microvm@` template's `X-RestartIfChanged=false`. That is right for an ephemeral
 > guest with no state to lose. `make anon-box-rebuild` exists to make the intent explicit and to
 > force a fresh VM even when the closure did not change — a restart is also how you discard whatever

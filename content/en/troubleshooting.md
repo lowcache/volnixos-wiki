@@ -8,25 +8,23 @@ Active mitigations baked into the configuration, and notes on hardware-specific 
 
 ## Krita G'MIC plugin crash (SIGSEGV on first right-click)
 
-Krita is repackaged in
-[`home/pkgs.nix`](https://github.com/lowcache/volnixos/blob/main/home/pkgs.nix) with `symlinkJoin` +
-`makeWrapper`. The wrapper sets Wayland explicitly — Krita runs native Wayland under niri, with
-better stylus/tablet support; the XWayland fallback this wrapper once forced was a Hyprland-era
-mitigation for a canvas-freeze bug, and no longer applies now that Hyprland is gone:
+Krita is overridden in
+[`home/pkgs.nix`](https://github.com/lowcache/volnixos/blob/main/home/pkgs.nix) to bundle a
+null-guard-patched G'MIC:
 
 ```nix
-krita-wrapped = pkgs.symlinkJoin {
-  name = "krita";
-  paths = [ (pkgs.krita.override { krita-plugin-gmic = krita-plugin-gmic-patched; }) ];
-  nativeBuildInputs = [ pkgs.makeWrapper ];
-  postBuild = ''
-    wrapProgram $out/bin/krita \
-      --set QT_QPA_PLATFORM wayland
-  '';
+krita-patched = pkgs.krita.override {
+  krita-plugin-gmic = pkgs.krita-plugin-gmic.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ../overrides/gmic-qt-filtersview-nullptr-contextmenu.patch ];
+  });
 };
 ```
 
-The wrapper's current job is bundling a null-guard-patched G'MIC: the stock plugin SIGSEGVs on the
+There is no wrapper any more. Krita runs native Wayland under niri, with better stylus/tablet
+support, and gets `QT_QPA_PLATFORM=wayland` from the session environment (`home/default.nix`). The
+XWayland fallback the old wrapper once forced was a Hyprland-era mitigation for a canvas-freeze bug.
+
+The stock plugin SIGSEGVs on the
 first right-click or stylus press in the filter tree (`FiltersView::onCustomContextMenu` calls
 `deleteLater()` on a context-menu pointer that is still `nullptr`, a bug present upstream through
 gmic-qt master as of 2026-07). The override applies
@@ -86,4 +84,4 @@ change. See [Net-Gate & Anonymous Mode](../networking/net-gate/).
 > [!IMPORTANT] `make switch` alone does not restart net-gate
 > Verifying anonymous-mode behavior against a guest that never picked up a config change has already
 > cost one debugging session. `anon-box` is the exception — unit dependencies declared in
-> `anonymous-mode.nix` re-emit `restartIfChanged`, so it does restart on a plain `make switch`.
+> `anonymous-mode/default.nix` re-emit `restartIfChanged`, so it does restart on a plain `make switch`.

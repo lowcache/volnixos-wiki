@@ -5,10 +5,17 @@ description: "Networking on NixOS through MicroVM guests: a Tailscale VM, a Tor 
 weight: 20
 ---
 
-Three isolated guests are declared in
-[`nixos/vms.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/vms.nix) using
-[`microvm.nix`](https://github.com/astro/microvm.nix) with the `cloud-hypervisor` backend:
-`net-gate`, `tailscale`, and `anon-box`. `net-gate` and `tailscale` each get a static-IP tap facing
+Three isolated guests are declared with
+[`microvm.nix`](https://github.com/astro/microvm.nix) on the `cloud-hypervisor` backend:
+`net-gate`, `tailscale`, and `anon-box`. They live in two files.
+[`nixos/vms.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/vms.nix) holds the MicroVM
+host settings and the `tailscale` guest.
+[`nixos/modules/anonymous-mode/guests.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/modules/anonymous-mode/guests.nix)
+holds `net-gate`, `anon-box` and their host plumbing (`br-anon`, the net-gate tap, the scoped NAT,
+`net-gate-ssh-key`), and defines them only when `vol.anon-mode.enable` is set, which it is on this
+host. Settings every guest shares (networkd, the guest firewall, cloud-hypervisor,
+`random.trust_cpu=on`) come from
+[`nixos/vm-guest-base.nix`](https://github.com/lowcache/volnixos/blob/main/nixos/vm-guest-base.nix). `net-gate` and `tailscale` each get a static-IP tap facing
 the host; `anon-box` sits behind `net-gate` on an unaddressed bridge instead (see below). The host
 side is driven by `systemd-networkd`, and NetworkManager is told to leave the taps alone.
 
@@ -44,12 +51,13 @@ graph LR
 
 ## Host-side isolation
 
+NetworkManager must not touch the VM taps, so each file adds its own tap to the unmanaged list:
+
 ```nix
-# NetworkManager must not touch the VM taps
-networking.networkmanager.unmanaged = [
-  "interface-name:vm-netgate"
-  "interface-name:vm-tailscale"
-];
+# nixos/vms.nix
+networking.networkmanager.unmanaged = [ "interface-name:${cfg.tapInterface}" ];   # vm-tailscale
+# nixos/modules/anonymous-mode/guests.nix
+networking.networkmanager.unmanaged = [ "interface-name:${anon.tapInterface}" ];  # vm-netgate
 ```
 
 > [!NOTE] `vm-ngi` and `vm-anonbox` are not in this list
@@ -58,7 +66,8 @@ networking.networkmanager.unmanaged = [
 > There's nothing for NetworkManager to interfere with there, so the omission is deliberate, not a
 > gap to close.
 
-The host `systemd-networkd` networks (`10-microvm-tap`, `11-tailscale-tap`) assign the gateway
+The host `systemd-networkd` networks (`10-microvm-tap` in `guests.nix`, `11-tailscale-tap` in
+`vms.nix`) assign the gateway
 addresses, enable `IPv4Forwarding`, and set `RequiredForOnline = "no"` so the taps never become the
 host's default route. Static IPs are deliberate: DHCP would shift addresses on VM restart and break
 the forwarding configuration. The two aren't symmetric otherwise: `10-microvm-tap` sets no
@@ -82,6 +91,6 @@ make run-tailscale   # nix run .#tailscale-vm
 
 > [!NOTE] Windows 11 VM (not a MicroVM)
 > A separate QEMU/KVM Windows 11 guest is declared in `nixos/windows-vm.nix` (imported by
-> `nixos/hosts/volnix.nix:12`): libvirtd + virt-manager, SPICE USB redirection, and an emulated TPM 2.0.
+> `nixos/hosts/volnix.nix:13`): libvirtd + virt-manager, SPICE USB redirection, and an emulated TPM 2.0.
 > It is managed through virt-manager, independent of the `microvm.nix` stack. See
 > [Virtualization](../system/virtualization/).
